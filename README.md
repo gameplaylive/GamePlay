@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GamePlay Live
 
-## Getting Started
+Mobile-first gaming streams PWA — browse **Live Now**, **Trending & Popular**, and **My Favorites** from YouTube & Twitch, watch in official embeds, share in one tap, and upgrade to Pro for ad-free + 2×2 multi-view + **direct-to-YouTube mobile screen streaming** (`/go-live`).
 
-First, run the development server:
+## Stack
+
+- Next.js App Router + TypeScript + Tailwind CSS v4
+- Supabase (Auth Google-only, Postgres, Realtime chat)
+- Stripe subscriptions
+- PWA manifest (`public/manifest.json`)
+
+## Quick start (UI works before Supabase)
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) → **Continue with Google** falls back to **demo** when env vars are missing.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Connect Supabase later
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Create a Supabase project.
+2. Copy `.env.example` → `.env.local` and fill `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+3. Run `supabase/schema.sql` in the SQL Editor.
+4. Enable **Google** provider in Authentication → Providers.
+5. Add redirect URL: `https://YOUR_DOMAIN/auth/callback` (and `http://localhost:3000/auth/callback`).
+6. Promote yourself: `update profiles set role = 'admin' where email = 'you@gmail.com';`
 
-## Learn More
+## Admin vault
 
-To learn more about Next.js, take a look at the following resources:
+`/admin` (role = admin): Overview KPIs, pricing → Stripe Price, user management, game directory, API keys (YouTube / Twitch / Stripe / AdSense).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Cron (Vercel): `vercel.json` hits `/api/sync-streams` every 15m and `/api/sync-trending` every 20m. Set `CRON_SECRET` and pass `Authorization: Bearer …`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Discovery quota (Top 10 + Favorites)
 
-## Deploy on Vercel
+Default games only: **BGMI, Free Fire, Valorant, GTA V, Minecraft, Roblox, CS2, Dota 2, Fortnite, Call of Duty**.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Job | Schedule | Cost |
+|-----|----------|------|
+| YouTube live `search.list` (1 broad query, classify into 10 locally) | every 20m (~72/day) | 100 units/call |
+| Twitch `/helix/streams` batched top-10 `game_id`s (COD includes Warzone/CODM) | every 3m | free |
+| Pinned YT `playlistItems` + `videos.list` | every 10m | ~1–2 units/chunk |
+| Pinned Twitch `/helix/streams` batch | every 3m | free |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Favorite search: cache → `@handle`/`channels.list` (1u) → `search.list` only if `search_calls_today < 95`. Limits: Free **5**, Pro **15**.
+
+Migration: `supabase/migrations/20261117_quota_favorites_discovery.sql`
+
+## Go Live (Pro · Mobile + PC/OBS)
+
+- Web studio: `/go-live` — toggle **Mobile Phone** vs **PC (OBS Studio)**
+- Mobile: Android native encoder → YouTube RTMPS (`android-native/`)
+- PC: unique RTMP ingest + stream key → `ingest-server/` (nginx-rtmp) → webhook `/api/streams/ingest` sets `community_live_streams.is_live`
+- Migrations: `20261117_community_live_streams.sql`, `20261117_pc_obs_ingest.sql`
+- Homepage row: **Live Gameplay Live Creators**
+
+Env: `NEXT_PUBLIC_RTMP_INGEST_URL`, `NEXT_PUBLIC_HLS_PLAYBACK_BASE`, `INGEST_WEBHOOK_SECRET`
+
+In Google Cloud / Supabase Auth, add OAuth scope `https://www.googleapis.com/auth/youtube` for one-tap mobile broadcast creation.
+
+## Legal / App Store
+
+- `/privacy` · `/terms` · `/refunds` · `/contact`
+- Footer links on every page
+
+## Scripts
+
+- `npm run dev` — local development
+- `npm run build` — production build
+- `npm run start` — serve build

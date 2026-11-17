@@ -1,0 +1,28 @@
+{
+  "crons": [
+    {
+      "path": "/api/sync-streams?platform=youtube",
+      "schedule": "*/20 * * * *"
+    },
+    {
+      "path": "/api/sync-streams?platform=twitch",
+      "schedule": "*/3 * * * *"
+    },
+    {
+      "path": "/api/sync-trending",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/check-favorite-live?platform=youtube",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/check-favorite-live?platform=twitch",
+      "schedule": "*/3 * * * *"
+    },
+    {
+      "path": "/api/cron/process-reminders",
+      "schedule": "*/10 * * * *"
+    }
+  ]
+}

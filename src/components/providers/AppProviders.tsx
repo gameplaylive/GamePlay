@@ -1,0 +1,293 @@
+"use client";
+
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import type { AppSettingsPublic, Game, Profile, UserFavorite } from "@/lib/types";
+import { DEMO_PROFILE, MOCK_GAMES, MOCK_SETTINGS } from "@/lib/mock-data";
+import { DEFAULT_GAME_SLUGS } from "@/lib/default-games";
+import { createClient } from "@/lib/supabase/client";
+import { OnboardingModal } from "@/components/auth/OnboardingModal";
+import { ProBenefitsModal } from "@/components/ProBenefitsModal";
+import { YOUTUBE_OAUTH_SCOPE } from "@/lib/go-live";
+
+export interface ProModalOptions {
+  /** Always show ₹99 INR pricing (default for all Pro CTAs). */
+  inrPrice?: boolean;
+  highlight?: "go-live" | "favorites" | "multi-view" | "ads" | "reminders" | "default";
+  /** Optional one-line contextual header above the title */
+  contextTitle?: string;
+}
+
+interface AppContextValue {
+  profile: Profile | null;
+  games: Game[];
+  settings: AppSettingsPublic;
+  favorites: UserFavorite[];
+  loading: boolean;
+  supabaseReady: boolean;
+  demoMode: boolean;
+  refreshProfile: () => Promise<void>;
+  updateProfileLocal: (patch: Partial<Profile>) => void;
+  setFavorites: (favorites: UserFavorite[]) => void;
+  signInWithGoogle: (nextPath?: string) => Promise<void>;
+  /** Returns provider_token if already present; otherwise starts OAuth with YouTube scope (redirect). */
+  connectYouTube: (nextPath?: string) => Promise<string | null>;
+  signOut: () => Promise<void>;
+  openProModal: (options?: ProModalOptions) => void;
+  closeProModal: () => void;
+  proModalOpen: boolean;
+  proModalOptions: ProModalOptions | undefined;
+  enterDemo: () => void;
+}
+
+const AppContext = createContext<AppContextValue | null>(null);
+
+export function useApp() {
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error("useApp must be used within AppProviders");
+  return ctx;
+}
+
+export function AppProviders({ children }: { children: React.ReactNode }) {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [games, setGames] = useState<Game[]>(MOCK_GAMES);
+  const [settings, setSettings] = useState<AppSettingsPublic>(MOCK_SETTINGS);
+  const [favorites, setFavorites] = useState<UserFavorite[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [proModalOpen, setProModalOpen] = useState(false);
+  const [proModalOptions, setProModalOptions] = useState<ProModalOptions | undefined>();
+  const [demoMode, setDemoMode] = useState(false);
+  const supabase = useMemo(() => createClient(), []);
+  const supabaseReady = Boolean(supabase);
+
+  const loadGames = useCallback(async () => {
+    if (!supabase) {
+      setGames(MOCK_GAMES);
+      return;
+    }
+    const { data } = await supabase.from("games").select("*").eq("is_active", true).order("title");
+    if (data?.length) {
+      const allowed = new Set(DEFAULT_GAME_SLUGS as readonly string[]);
+      const filtered = (data as Game[]).filter((g) => allowed.has(g.slug));
+      setGames(filtered.length ? filtered : MOCK_GAMES);
+    }
+  }, [supabase]);
+
+  const loadSettings = useCallback(async () => {
+    if (!supabase) {
+      setSettings(MOCK_SETTINGS);
+      return;
+    }
+    const { data } = await supabase
+      .from("app_settings_public")
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
+    if (data) setSettings(data as AppSettingsPublic);
+  }, [supabase]);
+
+  const loadFavorites = useCallback(
+    async (userId: string) => {
+      if (!supabase) {
+        const raw = localStorage.getItem("gameplay_live_favorites");
+        setFavorites(raw ? (JSON.parse(raw) as UserFavorite[]) : []);
+        return;
+      }
+      const { data } = await supabase
+        .from("user_favorites")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      setFavorites((data as UserFavorite[]) || []);
+    },
+    [supabase]
+  );
+
+  const refreshProfile = useCallback(async () => {
+    if (!supabase) {
+      const raw = localStorage.getItem("gameplay_live_demo_profile");
+      if (raw) {
+        setProfile(JSON.parse(raw) as Profile);
+        setDemoMode(true);
+      }
+      setLoading(false);
+      return;
+    }
+
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) {
+      setProfile(null);
+      setFavorites([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data } = await supabase.from("profiles").select("*").eq("id", auth.user.id).maybeSingle();
+    if (data) {
+      setProfile(data as Profile);
+      await loadFavorites(auth.user.id);
+    }
+    setLoading(false);
+  }, [supabase, loadFavorites]);
+
+  useEffect(() => {
+    (async () => {
+      await Promise.all([loadGames(), loadSettings()]);
+      await refreshProfile();
+    })();
+
+    if (!supabase) return;
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      void refreshProfile();
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [supabase, loadGames, loadSettings, refreshProfile]);
+
+  const updateProfileLocal = useCallback(
+    (patch: Partial<Profile>) => {
+      setProfile((prev) => {
+        if (!prev) return prev;
+        const next = { ...prev, ...patch, updated_at: new Date().toISOString() };
+        if (demoMode || !supabase) {
+          localStorage.setItem("gameplay_live_demo_profile", JSON.stringify(next));
+        }
+        return next;
+      });
+    },
+    [demoMode, supabase]
+  );
+
+  const enterDemo = useCallback(() => {
+    const existing = localStorage.getItem("gameplay_live_demo_profile");
+    const p = existing ? (JSON.parse(existing) as Profile) : { ...DEMO_PROFILE, role: "admin" as const };
+    localStorage.setItem("gameplay_live_demo_profile", JSON.stringify(p));
+    setDemoMode(true);
+    setProfile(p);
+    const raw = localStorage.getItem("gameplay_live_favorites");
+    setFavorites(raw ? (JSON.parse(raw) as UserFavorite[]) : []);
+    setLoading(false);
+  }, []);
+
+  const signInWithGoogle = useCallback(
+    async (nextPath?: string) => {
+      const next = nextPath || (typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/");
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("gameplay_live_auth_next", next);
+      }
+
+      if (!supabase) {
+        // Supabase/Google not wired yet — local demo session, then continue to watch URL
+        enterDemo();
+        if (next && next !== "/" && typeof window !== "undefined") {
+          window.location.assign(next);
+        }
+        return;
+      }
+
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          queryParams: { prompt: "select_account" },
+        },
+      });
+    },
+    [supabase, enterDemo]
+  );
+
+  const connectYouTube = useCallback(
+    async (nextPath?: string) => {
+      const next = nextPath || "/go-live";
+      if (!supabase) {
+        // Demo: pretend connected
+        return "demo-youtube-token";
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const existing = sessionData.session?.provider_token;
+      // If user already consented to YouTube scope, provider_token works for Live API
+      if (existing && sessionStorage.getItem("gameplay_live_youtube_scope") === "1") {
+        return existing;
+      }
+
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("gameplay_live_auth_next", next);
+        sessionStorage.setItem("gameplay_live_youtube_connect", "1");
+        sessionStorage.setItem("gameplay_live_youtube_scope", "1");
+      }
+
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          scopes: YOUTUBE_OAUTH_SCOPE,
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+            include_granted_scopes: "true",
+          },
+        },
+      });
+      return null;
+    },
+    [supabase]
+  );
+
+  const signOut = useCallback(async () => {
+    if (supabase) await supabase.auth.signOut();
+    localStorage.removeItem("gameplay_live_demo_profile");
+    localStorage.removeItem("gameplay_live_favorites");
+    sessionStorage.removeItem("gameplay_live_youtube_scope");
+    setDemoMode(false);
+    setProfile(null);
+    setFavorites([]);
+  }, [supabase]);
+
+  const openProModal = useCallback((options?: ProModalOptions) => {
+    // Ignore synthetic mouse events when used as onClick={openProModal}
+    const safe =
+      options &&
+      typeof options === "object" &&
+      ("inrPrice" in options || "highlight" in options || "contextTitle" in options)
+        ? { inrPrice: true, ...options }
+        : { inrPrice: true };
+    setProModalOptions(safe);
+    setProModalOpen(true);
+  }, []);
+
+  const closeProModal = useCallback(() => {
+    setProModalOpen(false);
+    setProModalOptions(undefined);
+  }, []);
+
+  const value: AppContextValue = {
+    profile,
+    games,
+    settings,
+    favorites,
+    loading,
+    supabaseReady,
+    demoMode,
+    refreshProfile,
+    updateProfileLocal,
+    setFavorites,
+    signInWithGoogle,
+    connectYouTube,
+    signOut,
+    openProModal,
+    closeProModal,
+    proModalOpen,
+    proModalOptions,
+    enterDemo,
+  };
+
+  const needsOnboarding =
+    Boolean(profile) && (!profile?.favorite_games || profile.favorite_games.length === 0);
+
+  return (
+    <AppContext.Provider value={value}>
+      {children}
+      {needsOnboarding && <OnboardingModal />}
+      <ProBenefitsModal open={proModalOpen} onClose={closeProModal} options={proModalOptions} />
+    </AppContext.Provider>
+  );
+}
