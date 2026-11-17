@@ -3,8 +3,8 @@ import { getAppSettingsFull } from "@/lib/settings";
 import { twitchFetch } from "@/lib/twitch";
 import { youtubeFetch } from "@/lib/youtube";
 import {
-  SAMPLE_CUSTOM_MATCHES,
-  SAMPLE_PANDASCORE_MATCHES,
+  getSampleCustomMatches,
+  getSamplePandascoreMatches,
   mapCustomTournament,
   mapPandaScoreMatch,
   sortTournamentMatches,
@@ -14,7 +14,7 @@ import type { CustomTournament, TournamentMatch, TournamentsApiResponse } from "
 async function fetchPandaScore(): Promise<{ matches: TournamentMatch[]; configured: boolean }> {
   const key = process.env.PANDASCORE_API_KEY?.trim();
   if (!key) {
-    return { matches: SAMPLE_PANDASCORE_MATCHES, configured: false };
+    return { matches: getSamplePandascoreMatches(), configured: false };
   }
 
   const headers = { Authorization: `Bearer ${key}`, Accept: "application/json" };
@@ -31,7 +31,7 @@ async function fetchPandaScore(): Promise<{ matches: TournamentMatch[]; configur
     ]);
 
     if (!runningRes.ok && !upcomingRes.ok) {
-      return { matches: SAMPLE_PANDASCORE_MATCHES, configured: true };
+      return { matches: getSamplePandascoreMatches(), configured: true };
     }
 
     const running = runningRes.ok ? await runningRes.json() : [];
@@ -47,10 +47,10 @@ async function fetchPandaScore(): Promise<{ matches: TournamentMatch[]; configur
       if (m) mapped.push(m);
     }
 
-    if (!mapped.length) return { matches: SAMPLE_PANDASCORE_MATCHES, configured: true };
+    if (!mapped.length) return { matches: getSamplePandascoreMatches(), configured: true };
     return { matches: mapped, configured: true };
   } catch {
-    return { matches: SAMPLE_PANDASCORE_MATCHES, configured: true };
+    return { matches: getSamplePandascoreMatches(), configured: true };
   }
 }
 
@@ -92,7 +92,7 @@ async function fetchCustomTournaments(): Promise<TournamentMatch[]> {
   const service = createServiceClient();
   const anon = service || (await createClient());
 
-  if (!anon) return SAMPLE_CUSTOM_MATCHES;
+  if (!anon) return getSampleCustomMatches();
 
   const { data, error } = await anon
     .from("custom_tournaments")
@@ -101,7 +101,7 @@ async function fetchCustomTournaments(): Promise<TournamentMatch[]> {
 
   if (error || !data?.length) {
     if (error) console.error("custom_tournaments", error.message);
-    return SAMPLE_CUSTOM_MATCHES;
+    return getSampleCustomMatches();
   }
 
   const rows = data as CustomTournament[];

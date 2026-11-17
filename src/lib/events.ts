@@ -1,48 +1,54 @@
 import type { EventReminder, PulseCategoryBadge, PulseEvent, PulseEventType, TournamentMatch } from "@/lib/types";
 import { countdownLabel, formatLocalStart } from "@/lib/tournaments";
 
-export const SAMPLE_PULSE_EVENTS: PulseEvent[] = [
-  {
-    id: "pulse-yt-summer-game-fest",
-    title: "Summer Game Fest — Live Showcase",
-    game_name: "Multi",
-    event_type: "game_show",
-    badge: "GAME SHOW",
-    start_time: new Date(Date.now() + 3 * 24 * 3600000).toISOString(),
-    stream_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    status: "UPCOMING",
-  },
-  {
-    id: "pulse-yt-nintendo-direct",
-    title: "Nintendo Direct Mini Partner Showcase",
-    game_name: "Nintendo",
-    event_type: "game_show",
-    badge: "GAME SHOW",
-    start_time: new Date(Date.now() + 36 * 3600000).toISOString(),
-    stream_url: "https://www.youtube.com/watch?v=jNQXAC9IVRw",
-    status: "UPCOMING",
-  },
-  {
-    id: "pulse-yt-state-of-play",
-    title: "PlayStation State of Play",
-    game_name: "PlayStation",
-    event_type: "game_show",
-    badge: "GAME SHOW",
-    start_time: new Date(Date.now() + 5 * 24 * 3600000).toISOString(),
-    stream_url: "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
-    status: "UPCOMING",
-  },
-  {
-    id: "pulse-yt-game-awards",
-    title: "The Game Awards — Upcoming Premiere",
-    game_name: "Multi",
-    event_type: "gameplay",
-    badge: "UPCOMING GAMEPLAY",
-    start_time: new Date(Date.now() + 10 * 24 * 3600000).toISOString(),
-    stream_url: "https://www.youtube.com/watch?v=9bZkp7q19f0",
-    status: "UPCOMING",
-  },
-];
+/** Client-only samples — call inside useEffect, never at module load (Date.now breaks hydration). */
+export function getSamplePulseEvents(now = Date.now()): PulseEvent[] {
+  return [
+    {
+      id: "pulse-yt-summer-game-fest",
+      title: "Summer Game Fest — Live Showcase",
+      game_name: "Multi",
+      event_type: "game_show",
+      badge: "GAME SHOW",
+      start_time: new Date(now + 3 * 24 * 3600000).toISOString(),
+      stream_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      status: "UPCOMING",
+    },
+    {
+      id: "pulse-yt-nintendo-direct",
+      title: "Nintendo Direct Mini Partner Showcase",
+      game_name: "Nintendo",
+      event_type: "game_show",
+      badge: "GAME SHOW",
+      start_time: new Date(now + 36 * 3600000).toISOString(),
+      stream_url: "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+      status: "UPCOMING",
+    },
+    {
+      id: "pulse-yt-state-of-play",
+      title: "PlayStation State of Play",
+      game_name: "PlayStation",
+      event_type: "game_show",
+      badge: "GAME SHOW",
+      start_time: new Date(now + 5 * 24 * 3600000).toISOString(),
+      stream_url: "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
+      status: "UPCOMING",
+    },
+    {
+      id: "pulse-yt-game-awards",
+      title: "The Game Awards — Upcoming Premiere",
+      game_name: "Multi",
+      event_type: "gameplay",
+      badge: "UPCOMING GAMEPLAY",
+      start_time: new Date(now + 10 * 24 * 3600000).toISOString(),
+      stream_url: "https://www.youtube.com/watch?v=9bZkp7q19f0",
+      status: "UPCOMING",
+    },
+  ];
+}
+
+/** @deprecated Use getSamplePulseEvents() inside effects only */
+export const SAMPLE_PULSE_EVENTS: PulseEvent[] = [];
 
 export function badgeForType(type: PulseEventType): PulseCategoryBadge {
   if (type === "tournament") return "TOURNAMENT";

@@ -105,7 +105,7 @@ on conflict (id) do nothing;
 
 -- Public display fields via a security-invoker view (no secrets)
 create or replace view public.app_settings_public
-with (security_invoker = true)
+with (security_invoker = false)
 as
 select
   id,

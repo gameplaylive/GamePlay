@@ -6,7 +6,6 @@ import { Plus, UserPlus } from "lucide-react";
 import { StreamCard } from "@/components/feed/StreamCard";
 import { AdBanner } from "@/components/AdBanner";
 import { FavoriteGamerModal } from "@/components/feed/FavoriteGamerModal";
-import { BrandLogo } from "@/components/BrandLogo";
 import { FeaturedTournamentsStrip } from "@/components/tournaments/FeaturedTournamentsStrip";
 import { EventsPulseBar } from "@/components/events/EventsPulseBar";
 import { CommunityCreatorsRow } from "@/components/feed/CommunityCreatorsRow";
@@ -139,12 +138,6 @@ export function HomeFeed() {
     <div className="mx-auto max-w-7xl space-y-4 px-3 pb-10 pt-3 md:space-y-5 md:px-6 md:pt-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="mb-2 flex items-center gap-2">
-            <BrandLogo size="xs" href={null} />
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9B5CFF]">
-              GamePlay Live
-            </p>
-          </div>
           <h1 className="font-display text-[1.85rem] font-bold tracking-tight text-white sm:text-4xl">
             Tap in. <span className="bg-gradient-to-r from-cyan to-purple bg-clip-text text-transparent">Watch.</span> Share.
           </h1>
@@ -180,6 +173,40 @@ export function HomeFeed() {
         ))}
       </div>
 
+      {tab !== "favorites" && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
+          {pills.map((p) => (
+            <button
+              key={p.key}
+              onClick={() => setGameFilter(p.key)}
+              className={cn(
+                "chip shrink-0 px-3 py-1.5 text-[11px] font-semibold",
+                gameFilter === p.key ? "chip-active" : "border-border-glow bg-white/[0.03] text-muted"
+              )}
+            >
+              {p.label}
+            </button>
+          ))}
+          <button
+            onClick={() => setEditGames(true)}
+            className="chip inline-flex shrink-0 items-center gap-1 border-dashed border-purple/45 bg-purple/10 px-3 py-1.5 text-[11px] font-semibold text-purple"
+          >
+            <Plus size={12} /> Edit
+          </button>
+          <select
+            value={language}
+            onChange={(e) => void saveLanguage(e.target.value)}
+            className="ml-auto shrink-0 rounded-full border border-border-glow bg-[#101420] px-3 py-1.5 text-[11px] outline-none"
+          >
+            {LANGUAGES.map((l) => (
+              <option key={l} value={l}>
+                {l}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <EventsPulseBar />
 
       {tab === "live" && <CommunityCreatorsRow />}
@@ -188,38 +215,6 @@ export function HomeFeed() {
 
       {tab !== "favorites" && (
         <>
-          <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
-            {pills.map((p) => (
-              <button
-                key={p.key}
-                onClick={() => setGameFilter(p.key)}
-                className={cn(
-                  "chip shrink-0 px-3 py-1.5 text-[11px] font-semibold",
-                  gameFilter === p.key ? "chip-active" : "border-border-glow bg-white/[0.03] text-muted"
-                )}
-              >
-                {p.label}
-              </button>
-            ))}
-            <button
-              onClick={() => setEditGames(true)}
-              className="chip inline-flex shrink-0 items-center gap-1 border-dashed border-purple/45 bg-purple/10 px-3 py-1.5 text-[11px] font-semibold text-purple"
-            >
-              <Plus size={12} /> Edit
-            </button>
-            <select
-              value={language}
-              onChange={(e) => void saveLanguage(e.target.value)}
-              className="ml-auto shrink-0 rounded-full border border-border-glow bg-[#101420] px-3 py-1.5 text-[11px] outline-none"
-            >
-              {LANGUAGES.map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* Primary monetization strip — always under game filters for free users */}
           <AdBanner variant="strip" />
 

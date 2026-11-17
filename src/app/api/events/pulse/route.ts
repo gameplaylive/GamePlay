@@ -3,7 +3,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getAppSettingsFull } from "@/lib/settings";
 import { youtubeFetch } from "@/lib/youtube";
 import {
-  SAMPLE_PULSE_EVENTS,
+  getSamplePulseEvents,
   badgeForType,
   tournamentToPulse,
   YOUTUBE_EVENT_QUERIES,
@@ -28,7 +28,7 @@ async function fetchTournamentPulse(): Promise<PulseEvent[]> {
 
 async function fetchYoutubeUpcoming(): Promise<PulseEvent[]> {
   const settings = await getAppSettingsFull();
-  if (!settings.youtube_api_key) return SAMPLE_PULSE_EVENTS.filter((e) => e.event_type !== "tournament");
+  if (!settings.youtube_api_key) return getSamplePulseEvents().filter((e) => e.event_type !== "tournament");
 
   const out: PulseEvent[] = [];
   for (const q of YOUTUBE_EVENT_QUERIES.slice(0, 4)) {
@@ -73,13 +73,13 @@ async function fetchYoutubeUpcoming(): Promise<PulseEvent[]> {
     }
   }
 
-  return out.length ? out : SAMPLE_PULSE_EVENTS;
+  return out.length ? out : getSamplePulseEvents();
 }
 
 async function fetchSpecialEvents(): Promise<PulseEvent[]> {
   const supabase = createServiceClient() || (await createClient());
   if (!supabase) {
-    return SAMPLE_PULSE_EVENTS.filter((e) => e.event_type === "game_show");
+    return getSamplePulseEvents().filter((e) => e.event_type === "game_show");
   }
 
   const { data, error } = await supabase
@@ -92,7 +92,7 @@ async function fetchSpecialEvents(): Promise<PulseEvent[]> {
 
   if (error || !data?.length) {
     if (error) console.error("special_events", error.message);
-    return SAMPLE_PULSE_EVENTS.filter((e) => e.event_type === "game_show").slice(0, 2);
+    return getSamplePulseEvents().filter((e) => e.event_type === "game_show").slice(0, 2);
   }
 
   return data.map((row) => {

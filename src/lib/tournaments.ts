@@ -1,101 +1,106 @@
 import type { CustomTournament, Platform, TournamentMatch, TournamentStatus } from "@/lib/types";
 
-export const SAMPLE_PANDASCORE_MATCHES: TournamentMatch[] = [
-  {
-    id: "ps-sample-val-1",
-    source: "pandascore",
-    status: "LIVE",
-    game: "Valorant",
-    tournament_name: "VCT Masters Sample",
-    match_title: "Semi Final — Map 2",
-    start_time: new Date(Date.now() - 25 * 60000).toISOString(),
-    team_a: "Sentinels",
-    team_b: "Paper Rex",
-    team_a_logo: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=80&h=80&q=80",
-    team_b_logo: "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=80&h=80&q=80",
-    platform: "twitch",
-    stream_url: "https://www.twitch.tv/valorant",
-    embed_external_id: "valorant",
-    is_featured: true,
-  },
-  {
-    id: "ps-sample-cs2-1",
-    source: "pandascore",
-    status: "UPCOMING",
-    game: "CS2",
-    tournament_name: "BLAST Premier Sample",
-    match_title: "Quarter Final",
-    start_time: new Date(Date.now() + 3 * 3600000).toISOString(),
-    team_a: "Natus Vincere",
-    team_b: "G2 Esports",
-    team_a_logo: "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?auto=format&fit=crop&w=80&h=80&q=80",
-    team_b_logo: "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?auto=format&fit=crop&w=80&h=80&q=80",
-    platform: "twitch",
-    stream_url: "https://www.twitch.tv/eslcs",
-    embed_external_id: "eslcs",
-    is_featured: true,
-  },
-  {
-    id: "ps-sample-lol-1",
-    source: "pandascore",
-    status: "UPCOMING",
-    game: "LoL",
-    tournament_name: "LCK Spring Sample",
-    match_title: "Week 3 — Bo3",
-    start_time: new Date(Date.now() + 26 * 3600000).toISOString(),
-    team_a: "T1",
-    team_b: "Gen.G",
-    platform: "youtube",
-    stream_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    embed_external_id: "dQw4w9WgXcQ",
-    is_featured: false,
-  },
-];
+/** Call at request/effect time — never freeze Date.now() at module load (breaks hydration). */
+export function getSamplePandascoreMatches(now = Date.now()): TournamentMatch[] {
+  return [
+    {
+      id: "ps-sample-val-1",
+      source: "pandascore",
+      status: "LIVE",
+      game: "Valorant",
+      tournament_name: "VCT Masters Sample",
+      match_title: "Semi Final — Map 2",
+      start_time: new Date(now - 25 * 60000).toISOString(),
+      team_a: "Sentinels",
+      team_b: "Paper Rex",
+      team_a_logo: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=80&h=80&q=80",
+      team_b_logo: "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=80&h=80&q=80",
+      platform: "twitch",
+      stream_url: "https://www.twitch.tv/valorant",
+      embed_external_id: "valorant",
+      is_featured: true,
+    },
+    {
+      id: "ps-sample-cs2-1",
+      source: "pandascore",
+      status: "UPCOMING",
+      game: "CS2",
+      tournament_name: "BLAST Premier Sample",
+      match_title: "Quarter Final",
+      start_time: new Date(now + 3 * 3600000).toISOString(),
+      team_a: "Natus Vincere",
+      team_b: "G2 Esports",
+      team_a_logo: "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?auto=format&fit=crop&w=80&h=80&q=80",
+      team_b_logo: "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?auto=format&fit=crop&w=80&h=80&q=80",
+      platform: "twitch",
+      stream_url: "https://www.twitch.tv/eslcs",
+      embed_external_id: "eslcs",
+      is_featured: true,
+    },
+    {
+      id: "ps-sample-lol-1",
+      source: "pandascore",
+      status: "UPCOMING",
+      game: "LoL",
+      tournament_name: "LCK Spring Sample",
+      match_title: "Week 3 — Bo3",
+      start_time: new Date(now + 26 * 3600000).toISOString(),
+      team_a: "T1",
+      team_b: "Gen.G",
+      platform: "youtube",
+      stream_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      embed_external_id: "dQw4w9WgXcQ",
+      is_featured: false,
+    },
+  ];
+}
 
-export const SAMPLE_CUSTOM_MATCHES: TournamentMatch[] = [
-  {
-    id: "33333333-3333-3333-3333-333333333302",
-    source: "custom",
-    status: "LIVE",
-    game: "Free Fire",
-    tournament_name: "Free Fire World Series IN",
-    match_title: "Semi Finals — Booyah Stage",
-    start_time: new Date(Date.now() - 30 * 60000).toISOString(),
-    end_time: new Date(Date.now() + 3 * 3600000).toISOString(),
-    platform: "youtube",
-    stream_url: "https://www.youtube.com/watch?v=jNQXAC9IVRw",
-    embed_external_id: "jNQXAC9IVRw",
-    is_featured: true,
-  },
-  {
-    id: "33333333-3333-3333-3333-333333333301",
-    source: "custom",
-    status: "UPCOMING",
-    game: "BGMI",
-    tournament_name: "BGIS 2026 Grand Finals",
-    match_title: "Day 3 — Finals Lobby",
-    start_time: new Date(Date.now() + 2 * 3600000).toISOString(),
-    end_time: new Date(Date.now() + 6 * 3600000).toISOString(),
-    platform: "youtube",
-    stream_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    embed_external_id: "dQw4w9WgXcQ",
-    is_featured: true,
-  },
-  {
-    id: "33333333-3333-3333-3333-333333333303",
-    source: "custom",
-    status: "UPCOMING",
-    game: "BGMI",
-    tournament_name: "BGMI Challengers Cup",
-    match_title: "Qualifier Week 2",
-    start_time: new Date(Date.now() + 24 * 3600000).toISOString(),
-    platform: "twitch",
-    channel_id: "pubgmobile",
-    stream_url: "https://www.twitch.tv/pubgmobile",
-    embed_external_id: "pubgmobile",
-    is_featured: true,
-  },
-];
+export function getSampleCustomMatches(now = Date.now()): TournamentMatch[] {
+  return [
+    {
+      id: "33333333-3333-3333-3333-333333333302",
+      source: "custom",
+      status: "LIVE",
+      game: "Free Fire",
+      tournament_name: "Free Fire World Series IN",
+      match_title: "Semi Finals — Booyah Stage",
+      start_time: new Date(now - 30 * 60000).toISOString(),
+      end_time: new Date(now + 3 * 3600000).toISOString(),
+      platform: "youtube",
+      stream_url: "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+      embed_external_id: "jNQXAC9IVRw",
+      is_featured: true,
+    },
+    {
+      id: "33333333-3333-3333-3333-333333333301",
+      source: "custom",
+      status: "UPCOMING",
+      game: "BGMI",
+      tournament_name: "BGIS 2026 Grand Finals",
+      match_title: "Day 3 — Finals Lobby",
+      start_time: new Date(now + 2 * 3600000).toISOString(),
+      end_time: new Date(now + 6 * 3600000).toISOString(),
+      platform: "youtube",
+      stream_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      embed_external_id: "dQw4w9WgXcQ",
+      is_featured: true,
+    },
+    {
+      id: "33333333-3333-3333-3333-333333333303",
+      source: "custom",
+      status: "UPCOMING",
+      game: "BGMI",
+      tournament_name: "BGMI Challengers Cup",
+      match_title: "Qualifier Week 2",
+      start_time: new Date(now + 24 * 3600000).toISOString(),
+      platform: "twitch",
+      channel_id: "pubgmobile",
+      stream_url: "https://www.twitch.tv/pubgmobile",
+      embed_external_id: "pubgmobile",
+      is_featured: true,
+    },
+  ];
+}
 
 export function sortTournamentMatches(matches: TournamentMatch[]): TournamentMatch[] {
   const rank: Record<TournamentStatus, number> = { LIVE: 0, UPCOMING: 1, ENDED: 2 };
@@ -260,15 +265,17 @@ export function buildWatchPath(match: TournamentMatch): string | null {
 
 export function formatLocalStart(iso: string): string {
   try {
-    return new Intl.DateTimeFormat(undefined, {
+    // Fixed locale so SSR + browser never disagree (hydration-safe).
+    return new Intl.DateTimeFormat("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
       hour: "numeric",
       minute: "2-digit",
+      hour12: true,
     }).format(new Date(iso));
   } catch {
-    return new Date(iso).toLocaleString();
+    return new Date(iso).toISOString();
   }
 }
 

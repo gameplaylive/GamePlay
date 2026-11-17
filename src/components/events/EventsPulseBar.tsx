@@ -3,14 +3,15 @@
 import { useEffect, useState } from "react";
 import { Bell, Check } from "lucide-react";
 import type { PulseEvent } from "@/lib/types";
-import { pulseTimeLabel, SAMPLE_PULSE_EVENTS } from "@/lib/events";
+import { getSamplePulseEvents, pulseTimeLabel } from "@/lib/events";
 import { useApp } from "@/components/providers/AppProviders";
 import { ensurePushSubscription } from "@/lib/push";
 import { cn } from "@/lib/utils";
 
 export function EventsPulseBar() {
   const { profile, signInWithGoogle } = useApp();
-  const [events, setEvents] = useState<PulseEvent[]>(SAMPLE_PULSE_EVENTS);
+  // Start empty so SSR + first client paint match (avoids Date.now / locale hydration errors).
+  const [events, setEvents] = useState<PulseEvent[]>([]);
   const [reminded, setReminded] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -20,9 +21,11 @@ export function EventsPulseBar() {
       try {
         const res = await fetch("/api/events/pulse");
         const data = await res.json();
-        if (!cancelled && data.events?.length) setEvents(data.events);
+        if (cancelled) return;
+        if (data.events?.length) setEvents(data.events);
+        else setEvents(getSamplePulseEvents());
       } catch {
-        // keep samples
+        if (!cancelled) setEvents(getSamplePulseEvents());
       }
     })();
     return () => {

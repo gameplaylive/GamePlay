@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { adminCookieName, isTournamentsAdmin } from "@/lib/admin-auth";
-import { SAMPLE_CUSTOM_MATCHES } from "@/lib/tournaments";
+import { getSampleCustomMatches } from "@/lib/tournaments";
 import type { CustomTournament } from "@/lib/types";
 import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
-const memoryStore: CustomTournament[] = SAMPLE_CUSTOM_MATCHES.map((m) => ({
+const memoryStore: CustomTournament[] = getSampleCustomMatches().map((m) => ({
   id: m.id,
   tournament_name: m.tournament_name,
   game: m.game,

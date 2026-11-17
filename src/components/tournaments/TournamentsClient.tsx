@@ -4,16 +4,18 @@ import { useEffect, useMemo, useState } from "react";
 import { Trophy } from "lucide-react";
 import type { TournamentMatch } from "@/lib/types";
 import { TournamentCard } from "@/components/tournaments/TournamentCard";
-import { SAMPLE_CUSTOM_MATCHES, SAMPLE_PANDASCORE_MATCHES, sortTournamentMatches } from "@/lib/tournaments";
+import {
+  getSampleCustomMatches,
+  getSamplePandascoreMatches,
+  sortTournamentMatches,
+} from "@/lib/tournaments";
 import { cn } from "@/lib/utils";
 
 const GAME_FILTERS = ["All Games", "BGMI", "Free Fire", "Valorant", "CS2", "LoL", "Dota 2"] as const;
 type StatusTab = "LIVE" | "UPCOMING";
 
 export function TournamentsClient() {
-  const [matches, setMatches] = useState<TournamentMatch[]>(
-    sortTournamentMatches([...SAMPLE_PANDASCORE_MATCHES, ...SAMPLE_CUSTOM_MATCHES])
-  );
+  const [matches, setMatches] = useState<TournamentMatch[]>([]);
   const [game, setGame] = useState<(typeof GAME_FILTERS)[number]>("All Games");
   const [status, setStatus] = useState<StatusTab>("LIVE");
   const [loading, setLoading] = useState(true);
@@ -27,14 +29,19 @@ export function TournamentsClient() {
       try {
         const res = await fetch("/api/tournaments");
         const data = await res.json();
-        if (!cancelled && data.matches) {
+        if (cancelled) return;
+        if (data.matches?.length) {
           setMatches(data.matches);
           setPandaConfigured(Boolean(data.pandascore_configured));
           setLiveCount(Number(data.live_count || 0));
           if ((data.live_count || 0) === 0) setStatus("UPCOMING");
+        } else {
+          setMatches(sortTournamentMatches([...getSamplePandascoreMatches(), ...getSampleCustomMatches()]));
         }
       } catch {
-        // samples already set
+        if (!cancelled) {
+          setMatches(sortTournamentMatches([...getSamplePandascoreMatches(), ...getSampleCustomMatches()]));
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
