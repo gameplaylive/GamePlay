@@ -1,11 +1,12 @@
-# Next.js on Netlify — OpenNext adapter handles output automatically.
-# Do NOT set a custom publish directory (that causes empty-site 404s).
+# Next.js on Netlify (OpenNext).
+# Publish must NOT be the repo root — Netlify UI was setting that and breaking the plugin.
 
 [build]
   command = "npm run build"
+  publish = ".next"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
