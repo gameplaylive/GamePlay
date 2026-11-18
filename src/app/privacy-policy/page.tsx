@@ -16,8 +16,8 @@ export default function PrivacyPolicyPage() {
         GamePlay Live is a creator-first gaming hub: we help fans discover live YouTube and Twitch
         gameplay, follow favorite creators, browse esports tournaments, and (for Creator Pro
         subscribers) use Go Live Studio tools. Official support:{" "}
-        <a className="text-cyan" href="mailto:gameplayliveapp@gmail.com">
-          gameplayliveapp@gmail.com
+        <a className="text-cyan" href="mailto:gameliveapp@gmail.com">
+          gameliveapp@gmail.com
         </a>
         .
       </p>
@@ -136,8 +136,8 @@ export default function PrivacyPolicyPage() {
       <h2>8. Retention &amp; deletion</h2>
       <p>
         Account data is retained while your account is active. Email{" "}
-        <a className="text-cyan" href="mailto:gameplayliveapp@gmail.com">
-          gameplayliveapp@gmail.com
+        <a className="text-cyan" href="mailto:gameliveapp@gmail.com">
+          gameliveapp@gmail.com
         </a>{" "}
         to request deletion. Chat messages may remain visible to other participants until removed by
         moderation.
@@ -152,8 +152,8 @@ export default function PrivacyPolicyPage() {
       <h2>10. Contact</h2>
       <p>
         Privacy questions:{" "}
-        <a className="text-cyan" href="mailto:gameplayliveapp@gmail.com">
-          gameplayliveapp@gmail.com
+        <a className="text-cyan" href="mailto:gameliveapp@gmail.com">
+          gameliveapp@gmail.com
         </a>
       </p>
     </LegalShell>

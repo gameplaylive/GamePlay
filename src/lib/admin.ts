@@ -1,6 +1,6 @@
 /** Platform admin — Google Sign-In email (lowercase). All other users stay role=user. */
 export const PLATFORM_ADMIN_EMAIL = (
-  process.env.ADMIN_EMAIL || "gameplayliveapp@gmail.com"
+  process.env.ADMIN_EMAIL || "gameliveapp@gmail.com"
 )
   .trim()
   .toLowerCase();

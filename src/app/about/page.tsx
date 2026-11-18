@@ -76,8 +76,8 @@ export default function AboutPage() {
       <p>
         GamePlay Live is developed by Cornerstone Studios. Questions, partnerships, or AdSense /
         verification requests:{" "}
-        <a className="text-cyan" href="mailto:gameplayliveapp@gmail.com">
-          gameplayliveapp@gmail.com
+        <a className="text-cyan" href="mailto:gameliveapp@gmail.com">
+          gameliveapp@gmail.com
         </a>
         .
       </p>

@@ -129,7 +129,7 @@ export const MOCK_SETTINGS: AppSettingsPublic = {
 
 export const DEMO_PROFILE: Profile = {
   id: "00000000-0000-0000-0000-000000000001",
-  email: "demo@gameplaylive.app",
+  email: "demo@gameplaylive.live",
   full_name: "Demo Player",
   avatar_url: null,
   role: "user",

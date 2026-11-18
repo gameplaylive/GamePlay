@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { LegalShell } from "@/components/legal/LegalShell";
 
-const SUPPORT_EMAIL = "gameplayliveapp@gmail.com";
+const SUPPORT_EMAIL = "gameliveapp@gmail.com";
 
 export default function ContactPage() {
   const [sent, setSent] = useState(false);

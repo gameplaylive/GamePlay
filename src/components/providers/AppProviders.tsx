@@ -174,6 +174,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       const next = nextPath || (typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/");
       if (typeof window !== "undefined") {
         sessionStorage.setItem("gameplay_live_auth_next", next);
+        // Cookie so /auth/callback (server) can restore destination without putting
+        // ?next= on redirectTo (Supabase allow-list matches are stricter with query strings).
+        document.cookie = `gameplay_live_auth_next=${encodeURIComponent(next)}; Path=/; Max-Age=600; SameSite=Lax`;
       }
 
       if (!supabase) {
@@ -188,7 +191,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          // Exact path only — must be allow-listed in Supabase → Auth → URL Configuration.
+          // Never use localhost here on production; origin comes from the live page URL.
+          redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: { prompt: "select_account" },
         },
       });
@@ -213,6 +218,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
       if (typeof window !== "undefined") {
         sessionStorage.setItem("gameplay_live_auth_next", next);
+        document.cookie = `gameplay_live_auth_next=${encodeURIComponent(next)}; Path=/; Max-Age=600; SameSite=Lax`;
         sessionStorage.setItem("gameplay_live_youtube_connect", "1");
         sessionStorage.setItem("gameplay_live_youtube_scope", "1");
       }
@@ -220,7 +226,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          redirectTo: `${window.location.origin}/auth/callback`,
           scopes: YOUTUBE_OAUTH_SCOPE,
           queryParams: {
             access_type: "offline",

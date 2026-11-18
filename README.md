@@ -28,7 +28,7 @@ Open [http://localhost:3000](http://localhost:3000) → **Continue with Google**
 5. Supabase → **Authentication → URL Configuration**:
    - Site URL: your live domain (or `http://localhost:3000`)
    - Redirect URLs: `http://localhost:3000/auth/callback`, `https://YOUR_DOMAIN/auth/callback`
-6. Platform admin is automatic for `gameplayliveapp@gmail.com` (`role=admin`). Every other Google account signs in as a normal `user`.
+6. Platform admin is automatic for `gameliveapp@gmail.com` (`role=admin`). Every other Google account signs in as a normal `user`.
 
 ## Admin vault
 

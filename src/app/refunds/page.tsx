@@ -12,8 +12,8 @@ export default function RefundsPage() {
       <ul>
         <li>
           You may cancel auto-renewal at any time from your Cashfree / bank mandate controls or by emailing{" "}
-          <a className="text-cyan" href="mailto:gameplayliveapp@gmail.com">
-            gameplayliveapp@gmail.com
+          <a className="text-cyan" href="mailto:gameliveapp@gmail.com">
+            gameliveapp@gmail.com
           </a>
           .
         </li>
@@ -41,8 +41,8 @@ export default function RefundsPage() {
       <h2>4. How to request help</h2>
       <p>
         Email{" "}
-        <a className="text-cyan" href="mailto:gameplayliveapp@gmail.com">
-          gameplayliveapp@gmail.com
+        <a className="text-cyan" href="mailto:gameliveapp@gmail.com">
+          gameliveapp@gmail.com
         </a>{" "}
         with subject line &quot;Refund Request&quot; or use the{" "}
         <a className="text-cyan" href="/contact">

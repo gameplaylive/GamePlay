@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, UserPlus } from "lucide-react";
+import { Plus, Radio, Users, UserPlus } from "lucide-react";
 import { StreamCard } from "@/components/feed/StreamCard";
 import { AdBanner } from "@/components/AdBanner";
 import { FavoriteGamerModal } from "@/components/feed/FavoriteGamerModal";
@@ -56,9 +56,15 @@ export function HomeFeed() {
   }, []);
 
   useEffect(() => {
-    if (tab !== "favorites") return;
+    if (!favorites.length) {
+      setFavStatuses([]);
+      return;
+    }
+    // Prefetch on My Gamers tab, and lightly when favorites change so the header live badge works.
+    const eager = tab === "favorites";
+    let cancelled = false;
     async function loadStatus() {
-      setLoadingFavs(true);
+      if (eager) setLoadingFavs(true);
       try {
         const res = await fetch("/api/favorites/status", {
           method: "POST",
@@ -66,6 +72,7 @@ export function HomeFeed() {
           body: JSON.stringify({ favorites }),
         });
         const data = await res.json();
+        if (cancelled) return;
         if (res.ok && data.statuses) setFavStatuses(data.statuses);
         else {
           setFavStatuses(
@@ -78,12 +85,24 @@ export function HomeFeed() {
           );
         }
       } catch {
-        setFavStatuses(favorites.map((f) => ({ ...f, is_live: Math.random() > 0.5 })));
+        if (!cancelled) {
+          setFavStatuses(
+            favorites.map((f) => ({
+              ...f,
+              is_live: false,
+              latest_video_title: "Status unavailable",
+              latest_video_thumbnail: f.avatar_url,
+            }))
+          );
+        }
       } finally {
-        setLoadingFavs(false);
+        if (!cancelled && eager) setLoadingFavs(false);
       }
     }
     void loadStatus();
+    return () => {
+      cancelled = true;
+    };
   }, [tab, favorites]);
 
   const favoriteSlugs = profile?.favorite_games || [];
@@ -95,15 +114,25 @@ export function HomeFeed() {
       list = list.filter((s) => s.content_type === "trending" || s.content_type === "video");
     else list = [];
 
+    // Only narrow by game when a specific chip is selected — never hide the whole
+    // live feed just because the user has onboarding favorite_games (that made
+    // logged-in users see an empty feed while guests saw everything).
     if (gameFilter !== "all") list = list.filter((s) => s.game_slug === gameFilter);
-    else if (favoriteSlugs.length && tab !== "trending")
-      list = list.filter((s) => favoriteSlugs.includes(s.game_slug));
 
     if (language !== "All") list = list.filter((s) => s.language === language);
 
     if (tab === "trending") list = [...list].sort((a, b) => b.viewer_count - a.viewer_count);
     return list;
-  }, [streams, tab, gameFilter, favoriteSlugs, language]);
+  }, [streams, tab, gameFilter, language]);
+
+  const myGamersLiveFirst = useMemo(() => {
+    return [...favStatuses].sort((a, b) => Number(b.is_live) - Number(a.is_live));
+  }, [favStatuses]);
+
+  const liveGamerCount = useMemo(
+    () => favStatuses.filter((f) => f.is_live).length,
+    [favStatuses]
+  );
 
   function setTab(next: HomeTab) {
     const params = new URLSearchParams(searchParams.toString());
@@ -132,11 +161,21 @@ export function HomeFeed() {
   }
 
   const pills = [
-    { key: "all", label: "All My Games" },
+    { key: "all", label: "All Games" },
     ...games
       .filter((g) => favoriteSlugs.includes(g.slug) || favoriteSlugs.length === 0)
       .map((g) => ({ key: g.slug, label: g.title })),
   ];
+
+  function openMyGamers() {
+    if (!profile) {
+      void signInWithGoogle("/?tab=favorites");
+      return;
+    }
+    setTab("favorites");
+  }
+
+  const liveSectionTitle = tab === "trending" ? "Trending Gameplay" : "Live Now";
 
   return (
     <div className="mx-auto max-w-7xl space-y-3 overflow-x-hidden px-3 pb-10 pt-3 md:space-y-5 md:px-6 md:pt-5">
@@ -146,14 +185,36 @@ export function HomeFeed() {
             Tap in. <span className="bg-gradient-to-r from-cyan to-purple bg-clip-text text-transparent">Watch.</span> Share.
           </h1>
         </div>
-        <button
-          onClick={() => setFavModal(true)}
-          className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-full border border-purple/40 bg-purple/20 px-2.5 py-1.5 text-[10px] font-bold text-white sm:gap-1.5 sm:px-3 sm:text-[11px]"
-        >
-          <UserPlus size={13} />
-          <span className="hidden sm:inline">Manage Favorites</span>
-          <span className="sm:hidden">Favs</span>
-        </button>
+        <div className="mt-0.5 flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            onClick={openMyGamers}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-[10px] font-bold sm:gap-1.5 sm:px-3 sm:text-[11px]",
+              tab === "favorites"
+                ? "border-cyan/50 bg-cyan/20 text-white"
+                : "border-cyan/35 bg-cyan/10 text-cyan"
+            )}
+          >
+            <Users size={13} />
+            <span className="hidden sm:inline">My Gamers</span>
+            <span className="sm:hidden">Gamers</span>
+            {liveGamerCount > 0 && (
+              <span className="live-pulse rounded bg-crimson px-1 py-0.5 text-[8px] font-black text-white">
+                {liveGamerCount}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setFavModal(true)}
+            className="inline-flex items-center gap-1 rounded-full border border-purple/40 bg-purple/20 px-2.5 py-1.5 text-[10px] font-bold text-white sm:gap-1.5 sm:px-3 sm:text-[11px]"
+          >
+            <UserPlus size={13} />
+            <span className="hidden sm:inline">Manage Favorites</span>
+            <span className="sm:hidden">Favs</span>
+          </button>
+        </div>
       </div>
 
       <div className="glass flex rounded-2xl p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
@@ -161,7 +222,7 @@ export function HomeFeed() {
           [
             ["live", "Live Now"],
             ["trending", "Trending"],
-            ["favorites", "Favorites"],
+            ["favorites", "My Gamers"],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -212,38 +273,145 @@ export function HomeFeed() {
             </select>
           </div>
 
-          {filtered.length === 0 ? (
-            <div className="glass rounded-2xl p-8 text-center text-sm text-muted">
-              No streams match these filters yet. Try another game or language, or check back after
-              the next feed sync.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {/* Max 2 ads on home — only when original feed content is present */}
-              <AdBanner variant="strip" label="Sponsored" />
-              <div className="flex items-center justify-between gap-2 px-0.5">
-                <p className="text-[11px] font-semibold text-muted">
-                  {filtered.length} {tab === "live" ? "live" : "videos"}
-                  {filtered.length > 7 ? " · scroll inside for more" : ""}
-                </p>
+          <section className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#101522] via-[#0c101a] to-[#14101f]">
+            <div className="flex items-center justify-between gap-3 border-b border-white/5 px-3 py-2 sm:px-4">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="relative flex h-1.5 w-1.5 shrink-0">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-crimson opacity-70" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-crimson" />
+                </span>
+                <h2 className="inline-flex items-center gap-1.5 truncate text-[10px] font-bold uppercase tracking-[0.14em] text-white/90">
+                  <Radio size={12} className="shrink-0 text-crimson" aria-hidden />
+                  {liveSectionTitle}
+                </h2>
               </div>
-              {/* Fixed window ~7 cards visible; extra lives scroll inside (not endless page) */}
-              <div className="max-h-[min(68vh,38rem)] overflow-y-auto overscroll-contain rounded-2xl border border-white/5 bg-black/20 p-2.5 scrollbar-thin md:max-h-[min(70vh,42rem)] md:p-3">
-                <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 lg:gap-4">
-                  {filtered.map((stream) => (
-                    <StreamCard key={stream.id} stream={stream} />
-                  ))}
+              <p className="shrink-0 text-[10px] text-muted">
+                {filtered.length} {tab === "live" ? "live" : "videos"}
+                {filtered.length > 7 ? " · scroll for more" : ""}
+              </p>
+            </div>
+
+            <div className="space-y-2 p-2.5 sm:p-3">
+              {filtered.length === 0 ? (
+                <div className="rounded-xl border border-white/5 bg-black/25 px-4 py-8 text-center text-sm text-muted">
+                  No streams match these filters yet. Try another game or language, or check back
+                  after the next feed sync.
                 </div>
-              </div>
+              ) : (
+                <>
+                  <AdBanner variant="strip" label="Sponsored" />
+                  <div className="max-h-[min(68vh,38rem)] overflow-y-auto overscroll-contain rounded-xl border border-white/5 bg-black/20 p-2.5 scrollbar-thin md:max-h-[min(70vh,42rem)] md:p-3">
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 lg:gap-4">
+                      {filtered.map((stream) => (
+                        <StreamCard key={stream.id} stream={stream} />
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
-          )}
+          </section>
         </>
       )}
 
+      {tab === "favorites" && (
+        <section className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#101522] via-[#0c101a] to-[#14101f]">
+          <div className="flex items-center justify-between gap-3 border-b border-white/5 px-3 py-2 sm:px-4">
+            <div className="flex min-w-0 items-center gap-2">
+              <Users size={12} className="shrink-0 text-cyan" aria-hidden />
+              <h2 className="truncate text-[10px] font-bold uppercase tracking-[0.14em] text-white/90">
+                My Gamers
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFavModal(true)}
+              className="shrink-0 text-[10px] font-bold text-cyan"
+            >
+              + Add gamer
+            </button>
+          </div>
+          <div className="space-y-3 p-2.5 sm:p-3">
+            {loadingFavs && <p className="text-sm text-muted">Checking who&apos;s live…</p>}
+            {!loadingFavs && favorites.length === 0 && (
+              <div className="rounded-xl border border-white/5 bg-black/25 px-4 py-8 text-center">
+                <p className="text-sm text-muted">
+                  Save creators with Manage Favorites — then open My Gamers to jump straight to
+                  their live streams.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setFavModal(true)}
+                  className="btn-primary mt-4 rounded-full px-5 py-2.5 text-sm"
+                >
+                  Add Favorite Gamer
+                </button>
+              </div>
+            )}
+            {!loadingFavs && favorites.length > 0 && liveGamerCount === 0 && (
+              <p className="px-1 text-[11px] text-muted">
+                None of your gamers are live right now — showing saved creators below.
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 lg:gap-4">
+              {myGamersLiveFirst.map((f) => (
+                <div
+                  key={f.id}
+                  className="overflow-hidden rounded-2xl border border-white/5 bg-[#0c101a] shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+                >
+                  <div className="relative aspect-[16/10] bg-black/40">
+                    <Image
+                      src={
+                        f.live_thumbnail ||
+                        f.latest_video_thumbnail ||
+                        f.avatar_url ||
+                        "/icons/icon-512.png"
+                      }
+                      alt={f.channel_name}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
+                    {f.is_live && (
+                      <span className="live-pulse absolute left-1.5 top-1.5 rounded-md bg-crimson px-1.5 py-0.5 text-[9px] font-black text-white">
+                        LIVE
+                      </span>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 space-y-0.5 p-1.5">
+                      <p className="truncate text-[11px] font-semibold text-white">{f.channel_name}</p>
+                      <p className="truncate text-[9px] text-white/55">
+                        {f.is_live
+                          ? `${f.live_title || "Live now"} · ${formatViewers(f.live_viewer_count || 0)}`
+                          : f.latest_video_title || "Offline"}
+                      </p>
+                      {f.is_live && f.live_external_id && (
+                        <Link
+                          href={`/watch/fav-${f.platform}-${encodeURIComponent(f.channel_id_or_username)}?platform=${f.platform}&external=${encodeURIComponent(f.live_external_id)}&type=live&title=${encodeURIComponent(f.live_title || f.channel_name)}&streamer=${encodeURIComponent(f.channel_name)}`}
+                          className="inline-block text-[9px] font-bold text-cyan"
+                          onClick={(e) => {
+                            if (!profile) {
+                              e.preventDefault();
+                              const path = `/watch/fav-${f.platform}-${encodeURIComponent(f.channel_id_or_username)}?platform=${f.platform}&external=${encodeURIComponent(f.live_external_id!)}&type=live&title=${encodeURIComponent(f.live_title || f.channel_name)}&streamer=${encodeURIComponent(f.channel_name)}`;
+                              void signInWithGoogle(path);
+                            }
+                          }}
+                        >
+                          Watch live →
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Secondary discovery — below primary live / my-gamers */}
       <EventsPulseBar />
-
       {tab === "live" && <CommunityCreatorsRow />}
-
       <FeaturedTournamentsStrip />
 
       {filtered.length > 0 && tab !== "favorites" && (
@@ -272,73 +440,6 @@ export function HomeFeed() {
             language, then open a single official player — we never rehost creator video.
           </p>
         </section>
-      )}
-
-      {tab === "favorites" && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="font-display text-xl font-bold">My Favorite Gamers</h2>
-            <button onClick={() => setFavModal(true)} className="text-xs font-bold text-cyan">
-              + Add gamer
-            </button>
-          </div>
-          {loadingFavs && <p className="text-sm text-muted">Checking live status…</p>}
-          {!loadingFavs && favorites.length === 0 && (
-            <div className="glass rounded-2xl p-8 text-center">
-              <p className="text-sm text-muted">Pin creators you love — we&apos;ll flag when they go live.</p>
-              <button onClick={() => setFavModal(true)} className="btn-primary mt-4 rounded-full px-5 py-2.5 text-sm">
-                Add Favorite Gamer
-              </button>
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 lg:gap-4">
-            {favStatuses.map((f) => (
-              <div
-                key={f.id}
-                className="overflow-hidden rounded-2xl border border-white/5 bg-[#0c101a] shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
-              >
-                <div className="relative aspect-[16/10] bg-black/40">
-                  <Image
-                    src={f.live_thumbnail || f.latest_video_thumbnail || f.avatar_url || "/icons/icon-512.png"}
-                    alt={f.channel_name}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
-                  {f.is_live && (
-                    <span className="live-pulse absolute left-1.5 top-1.5 rounded-md bg-crimson px-1.5 py-0.5 text-[9px] font-black text-white">
-                      LIVE
-                    </span>
-                  )}
-                  <div className="absolute inset-x-0 bottom-0 space-y-0.5 p-1.5">
-                    <p className="truncate text-[11px] font-semibold text-white">{f.channel_name}</p>
-                    <p className="truncate text-[9px] text-white/55">
-                      {f.is_live
-                        ? `${f.live_title || "Live now"} · ${formatViewers(f.live_viewer_count || 0)}`
-                        : f.latest_video_title || "Offline"}
-                    </p>
-                    {f.is_live && f.live_external_id && (
-                      <Link
-                        href={`/watch/fav-${f.platform}-${encodeURIComponent(f.channel_id_or_username)}?platform=${f.platform}&external=${encodeURIComponent(f.live_external_id)}&type=live&title=${encodeURIComponent(f.live_title || f.channel_name)}&streamer=${encodeURIComponent(f.channel_name)}`}
-                        className="inline-block text-[9px] font-bold text-cyan"
-                        onClick={(e) => {
-                          if (!profile) {
-                            e.preventDefault();
-                            const path = `/watch/fav-${f.platform}-${encodeURIComponent(f.channel_id_or_username)}?platform=${f.platform}&external=${encodeURIComponent(f.live_external_id!)}&type=live&title=${encodeURIComponent(f.live_title || f.channel_name)}&streamer=${encodeURIComponent(f.channel_name)}`;
-                            void signInWithGoogle(path);
-                          }
-                        }}
-                      >
-                        Watch live →
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       )}
 
       {editGames && (

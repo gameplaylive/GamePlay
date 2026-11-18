@@ -17,8 +17,8 @@ import com.google.android.gms.ads.AdView
 class MainActivity : AppCompatActivity() {
 
   companion object {
-    const val WEB_URL = "https://gameplaylive.app/go-live"
-    const val API_BASE = "https://gameplaylive.app"
+    const val WEB_URL = "https://gameplaylive.live/go-live"
+    const val API_BASE = "https://gameplaylive.live"
   }
 
   private lateinit var webView: WebView

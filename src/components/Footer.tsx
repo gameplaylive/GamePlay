@@ -21,8 +21,8 @@ export function Footer() {
           </p>
           <p className="mt-2 text-xs text-muted">
             Support:{" "}
-            <a className="text-cyan hover:underline" href="mailto:gameplayliveapp@gmail.com">
-              gameplayliveapp@gmail.com
+            <a className="text-cyan hover:underline" href="mailto:gameliveapp@gmail.com">
+              gameliveapp@gmail.com
             </a>
           </p>
         </div>

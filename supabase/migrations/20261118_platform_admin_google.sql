@@ -9,7 +9,7 @@ as $$
 declare
   initial_role text := 'user';
 begin
-  if lower(coalesce(new.email, '')) = 'gameplayliveapp@gmail.com' then
+  if lower(coalesce(new.email, '')) = 'gameliveapp@gmail.com' then
     initial_role := 'admin';
   end if;
 
@@ -26,7 +26,7 @@ begin
     full_name = coalesce(nullif(excluded.full_name, ''), profiles.full_name),
     avatar_url = coalesce(nullif(excluded.avatar_url, ''), profiles.avatar_url),
     role = case
-      when lower(coalesce(excluded.email, '')) = 'gameplayliveapp@gmail.com' then 'admin'
+      when lower(coalesce(excluded.email, '')) = 'gameliveapp@gmail.com' then 'admin'
       else profiles.role
     end,
     updated_at = now();
@@ -61,4 +61,4 @@ create trigger protect_profile_privileges
 
 update public.profiles
 set role = 'admin', updated_at = now()
-where lower(email) = 'gameplayliveapp@gmail.com';
+where lower(email) = 'gameliveapp@gmail.com';
