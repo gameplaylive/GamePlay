@@ -9,7 +9,7 @@ export default function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="mx-auto max-w-md px-4 py-16 text-center">
+      <div className="mx-auto max-w-md space-y-4 px-4 py-16 text-center">
         <h1 className="font-display text-3xl font-bold">Profile</h1>
         <p className="mt-2 text-sm text-muted">Sign in with Google to sync favorites and Pro.</p>
         <button onClick={() => void signInWithGoogle()} className="btn-primary mt-6 rounded-2xl px-6 py-3 text-sm">

@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s · GamePlay Live",
   },
   description:
-    "High-energy mobile-first hub for live gameplay and latest gaming videos from YouTube and Twitch. Watch instantly, share in one tap, go Pro for multi-view.",
+    "Creator-first gaming hub — watch live gameplay, go live to YouTube from mobile or OBS, and run tournament ops. Creator Pro unlocks the studio for ₹99/mo.",
   applicationName: "GamePlay Live",
   manifest: "/manifest.json",
   appleWebApp: {
@@ -49,10 +49,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col overflow-x-hidden">
         <AppProviders>
           <NavBar />
-          <main className="flex-1">{children}</main>
+          <main className="min-w-0 flex-1 overflow-x-hidden">{children}</main>
           <Footer />
         </AppProviders>
       </body>

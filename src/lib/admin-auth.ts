@@ -1,3 +1,4 @@
+import { isPlatformAdminEmail } from "@/lib/admin";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 
@@ -10,6 +11,7 @@ export async function isTournamentsAdmin(): Promise<boolean> {
       data: { user },
     } = await supabase.auth.getUser();
     if (user) {
+      if (isPlatformAdminEmail(user.email)) return true;
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")

@@ -13,6 +13,7 @@ import {
   Tv,
 } from "lucide-react";
 import { useApp } from "@/components/providers/AppProviders";
+import { CreatorStudioTools } from "@/components/go-live/CreatorStudioTools";
 import { PcObsPanel } from "@/components/go-live/PcObsPanel";
 import {
   buildRtmpUrl,
@@ -318,9 +319,22 @@ export function GoLiveClient() {
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-crimson">Creator studio</p>
         <h1 className="mt-1 font-display text-3xl font-bold">Go Live</h1>
         <p className="mt-1 text-sm text-muted">
-          Mobile screen → YouTube, or PC → OBS into GamePlay Live ingest.
+          Creator Pro studio — mobile screen → YouTube, or PC → OBS ingest, plus presets & alerts.
         </p>
       </div>
+
+      <CreatorStudioTools
+        title={title}
+        game={game}
+        resolution={resolution}
+        videoId={videoId}
+        onApplyPreset={(p) => {
+          setTitle(p.title);
+          setGame(p.game);
+          setResolution(p.resolution);
+          setStatus(`Applied preset “${p.name}”`);
+        }}
+      />
 
       <div className="glass grid grid-cols-2 gap-1 rounded-2xl p-1">
         <button

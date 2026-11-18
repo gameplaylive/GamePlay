@@ -12,20 +12,29 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 
 /**
- * Injected into the GamePlay Live WebView / Capacitor shell as `AndroidStreamBridge`.
+ * Injected into the GamePlay Live WebView as `AndroidStreamBridge`.
  *
  * JS:
  *   window.AndroidStreamBridge.startStream(rtmpUrl, gamePackageName, resolution, micEnabled)
  *   window.AndroidStreamBridge.stopStream()
+ *   window.AndroidStreamBridge.setBannerAdsEnabled(true|false)
+ *   window.AndroidStreamBridge.isNativeApp()
  */
 class WebAppInterface(
   private val activity: Activity,
   private val apiBaseUrl: String,
-  private val authCookieProvider: () -> String = { "" }
+  private val authCookieProvider: () -> String = { "" },
+  private val bannerAdsController: (Boolean) -> Unit = {}
 ) {
 
   @JavascriptInterface
   fun isNativeApp(): Boolean = true
+
+  /** Called from web when Pro / ads settings change. Free + ads on → true. */
+  @JavascriptInterface
+  fun setBannerAdsEnabled(enabled: Boolean) {
+    activity.runOnUiThread { bannerAdsController(enabled) }
+  }
 
   @JavascriptInterface
   fun startStream(

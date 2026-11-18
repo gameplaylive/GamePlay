@@ -18,14 +18,23 @@ declare global {
       muteMic?: () => void;
       unmuteMic?: () => void;
       isNativeApp?: () => boolean;
+      /** AdMob sticky banner — free users only; Pro / ads-off → false */
+      setBannerAdsEnabled?: (enabled: boolean) => void;
     };
   }
 }
 
 export function isAndroidNativeApp(): boolean {
   if (typeof window === "undefined") return false;
-  if (window.AndroidStreamBridge?.isNativeApp?.()) return true;
-  return Boolean(window.AndroidStreamBridge?.startStream);
+  // Prefer JS bridge when present
+  try {
+    if (window.AndroidStreamBridge?.isNativeApp?.()) return true;
+    if (window.AndroidStreamBridge?.startStream) return true;
+  } catch {
+    // Bridge may throw if partially injected
+  }
+  // Fallback: MainActivity appends "GameplayLiveAndroid/1.0" to the WebView UA
+  return /GameplayLiveAndroid/i.test(navigator.userAgent || "");
 }
 
 export function buildRtmpUrl(streamKey: string): string {

@@ -115,12 +115,15 @@ export const MOCK_STREAMS: CachedStream[] = [
 
 export const MOCK_SETTINGS: AppSettingsPublic = {
   id: 1,
-  pro_price_usd: 2,
+  pro_price_usd: 99,
   pro_plan_name: "GamePlay Live Pro",
-  pro_plan_description: "Ad-free streaming, multi-view, Go Live, and 15 Favorite Gamers",
+  pro_plan_description: "Creator Pro: Go Live Studio, alerts, and ad-free browsing",
   adsense_enabled: true,
   adsense_publisher_id: "",
   adsense_slot_id: "",
+  admob_enabled: true,
+  admob_app_id: "",
+  admob_banner_unit_id: "",
   last_sync_time: null,
 };
 
@@ -133,6 +136,9 @@ export const DEMO_PROFILE: Profile = {
   favorite_games: ["bgmi", "valorant", "free-fire"],
   preferred_language: "All",
   subscription_tier: "free",
+  payment_provider: "cashfree",
+  cashfree_subscription_id: null,
+  pro_expires_at: null,
   stripe_customer_id: null,
   is_banned: false,
   updated_at: new Date().toISOString(),

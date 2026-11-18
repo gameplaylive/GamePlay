@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Gameplay Live</string>
+
+  <!--
+    AdMob BANNER ad unit ID (used by activity_main.xml AdView).
+
+    DEBUG / local builds: keep Google's sample banner unit below (fills with test ads).
+
+    BEFORE compiling the Play Store / production APK:
+      1. AdMob → your app → Ad units → create (or open) a Banner unit
+      2. Copy Ad unit ID (format: ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy)
+      3. Paste it as the value of admob_banner_unit_id below
+      4. Ensure AndroidManifest.xml APPLICATION_ID is the matching real App ID
+         (same ca-app-pub-######## prefix; App ID uses ~ , unit ID uses / )
+
+    Do NOT ship a Play release still using ca-app-pub-3940256099942544/6300978111.
+  -->
+  <string name="admob_banner_unit_id">ca-app-pub-3940256099942544/6300978111</string>
+</resources>

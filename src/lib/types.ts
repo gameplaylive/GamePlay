@@ -14,6 +14,10 @@ export interface Profile {
   favorite_games: string[];
   preferred_language: string;
   subscription_tier: SubscriptionTier;
+  payment_provider: "cashfree" | string;
+  cashfree_subscription_id: string | null;
+  pro_expires_at: string | null;
+  /** @deprecated Stripe removed — kept nullable for old rows */
   stripe_customer_id: string | null;
   is_banned: boolean;
   updated_at: string;
@@ -48,19 +52,20 @@ export interface CachedStream {
 
 export interface AppSettingsPublic {
   id: number;
+  /** Pro monthly price in INR (legacy column name; Cashfree charges ₹). */
   pro_price_usd: number;
   pro_plan_name: string;
   pro_plan_description: string;
   adsense_enabled: boolean;
   adsense_publisher_id: string;
   adsense_slot_id: string;
+  admob_enabled: boolean;
+  admob_app_id: string;
+  admob_banner_unit_id: string;
   last_sync_time: string | null;
 }
 
 export interface AppSettings extends AppSettingsPublic {
-  stripe_price_id: string;
-  stripe_secret_key: string;
-  stripe_webhook_secret: string;
   youtube_api_key: string;
   twitch_client_id: string;
   twitch_client_secret: string;

@@ -111,31 +111,31 @@ export function EventsPulseBar() {
 
   return (
     <section className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#101522] via-[#0c101a] to-[#14101f]">
-      <div className="flex items-center justify-between gap-3 border-b border-white/5 px-3 py-2.5 sm:px-4">
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
+      <div className="flex items-center justify-between gap-3 border-b border-white/5 px-3 py-2 sm:px-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="relative flex h-1.5 w-1.5 shrink-0">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-crimson opacity-70" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-crimson" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-crimson" />
           </span>
-          <h2 className="text-[11px] font-black uppercase tracking-[0.18em] text-white sm:text-xs">
+          <h2 className="truncate text-[10px] font-bold uppercase tracking-[0.14em] text-white/90">
             Upcoming Events & Game Shows
           </h2>
         </div>
-        <p className="hidden text-[10px] text-muted sm:block">News Pulse</p>
+        <p className="hidden shrink-0 text-[10px] text-muted sm:block">News Pulse</p>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto px-3 py-3 scrollbar-hide sm:px-4">
+      <div className="flex items-stretch gap-2.5 overflow-x-auto px-3 py-2.5 scrollbar-hide sm:px-4">
         {events.map((event) => {
           const set = reminded.has(event.id);
           return (
             <article
               key={event.id}
-              className="min-w-[280px] max-w-[320px] shrink-0 rounded-xl border border-white/8 bg-black/25 p-3 backdrop-blur-sm"
+              className="flex w-[220px] shrink-0 flex-col rounded-xl border border-white/8 bg-black/25 p-2.5 backdrop-blur-sm sm:w-[240px]"
             >
-              <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="mb-1.5 flex items-center justify-between gap-2">
                 <span
                   className={cn(
-                    "rounded-md px-1.5 py-0.5 text-[9px] font-black tracking-wide",
+                    "rounded px-1.5 py-0.5 text-[8px] font-bold tracking-wide",
                     event.badge === "TOURNAMENT" && "bg-crimson/20 text-crimson",
                     event.badge === "GAME SHOW" && "bg-gold/20 text-gold",
                     event.badge === "UPCOMING GAMEPLAY" && "bg-purple/20 text-purple"
@@ -144,22 +144,22 @@ export function EventsPulseBar() {
                   {event.badge}
                 </span>
                 {event.status === "LIVE" && (
-                  <span className="live-pulse rounded bg-crimson px-1.5 py-0.5 text-[9px] font-black text-white">
+                  <span className="live-pulse rounded bg-crimson px-1.5 py-0.5 text-[8px] font-black text-white">
                     LIVE
                   </span>
                 )}
               </div>
-              <h3 className="line-clamp-2 font-display text-sm font-bold leading-snug text-white">
+              <h3 className="line-clamp-2 text-[12px] font-semibold leading-snug text-white">
                 {event.title}
               </h3>
-              <p className="mt-1 text-[11px] text-cyan">{event.game_name}</p>
-              <p className="mt-1 text-[10px] text-muted">{pulseTimeLabel(event)}</p>
+              <p className="mt-1 text-[10px] text-cyan">{event.game_name}</p>
+              <p className="mt-0.5 text-[9px] text-muted">{pulseTimeLabel(event)}</p>
               <button
                 type="button"
                 disabled={set || busyId === event.id}
                 onClick={() => void onRemind(event)}
                 className={cn(
-                  "mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-bold transition",
+                  "mt-auto inline-flex w-full items-center justify-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-bold transition",
                   set
                     ? "border border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
                     : "border border-cyan/40 bg-cyan/10 text-cyan hover:bg-cyan/20"
@@ -167,11 +167,11 @@ export function EventsPulseBar() {
               >
                 {set ? (
                   <>
-                    <Check size={13} /> Reminder Set ✓
+                    <Check size={12} /> Reminder Set
                   </>
                 ) : (
                   <>
-                    <Bell size={13} /> {busyId === event.id ? "Saving…" : "Remind Me"}
+                    <Bell size={12} /> {busyId === event.id ? "Saving…" : "Remind Me"}
                   </>
                 )}
               </button>

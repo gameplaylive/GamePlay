@@ -43,4 +43,37 @@ export function isSupabaseConfigured(): boolean {
   );
 }
 
-export const LANGUAGES = ["All", "English", "Hindi", "Spanish", "Portuguese", "Korean", "Japanese"] as const;
+/** India-first language filter for the homepage feed */
+export const LANGUAGES = [
+  "All",
+  "Hindi",
+  "English",
+  "Tamil",
+  "Telugu",
+  "Kannada",
+  "Malayalam",
+  "Bengali",
+  "Marathi",
+  "Spanish",
+  "Portuguese",
+  "Korean",
+  "Japanese",
+] as const;
+
+/** Best-effort language tag from stream title/description (no extra API quota). */
+export function detectStreamLanguage(title: string, description = ""): string {
+  const text = `${title} ${description}`;
+  const lower = text.toLowerCase();
+  if (/[\u0900-\u097F]/.test(text) || /\b(hindi|हिंदी|हिन्दी)\b/.test(lower)) return "Hindi";
+  if (/[\u0B80-\u0BFF]/.test(text) || /\btamil\b/.test(lower)) return "Tamil";
+  if (/[\u0C00-\u0C7F]/.test(text) || /\btelugu\b/.test(lower)) return "Telugu";
+  if (/[\u0C80-\u0CFF]/.test(text) || /\bkannada\b/.test(lower)) return "Kannada";
+  if (/[\u0D00-\u0D7F]/.test(text) || /\bmalayalam\b/.test(lower)) return "Malayalam";
+  if (/[\u0980-\u09FF]/.test(text) || /\bbengali\b/.test(lower)) return "Bengali";
+  if (/\bmarathi\b/.test(lower)) return "Marathi";
+  if (/\b(spanish|español|espanol)\b/.test(lower)) return "Spanish";
+  if (/\b(portuguese|português|brasileiro)\b/.test(lower)) return "Portuguese";
+  if (/[\uAC00-\uD7AF]/.test(text) || /\bkorean\b/.test(lower)) return "Korean";
+  if (/[\u3040-\u30FF]/.test(text) || /\bjapanese\b/.test(lower)) return "Japanese";
+  return "English";
+}

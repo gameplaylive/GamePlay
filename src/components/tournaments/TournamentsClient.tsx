@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Trophy } from "lucide-react";
 import type { TournamentMatch } from "@/lib/types";
+import { AdBanner } from "@/components/AdBanner";
 import { TournamentCard } from "@/components/tournaments/TournamentCard";
 import {
   getSampleCustomMatches,
@@ -74,11 +75,15 @@ export function TournamentsClient() {
           </div>
           <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Tournaments</h1>
           <p className="mt-1 text-sm text-muted">
-            PC esports via PandaScore + curated mobile events (BGMI, Free Fire).
+            Esports centre for GamePlay Live: PC brackets via PandaScore plus curated mobile events
+            (BGMI, Free Fire). Each card links to the official stream when available — we add
+            schedule context, not rebroadcasts.
             {!pandaConfigured && " · Sample PC matches shown until PANDASCORE_API_KEY is set."}
           </p>
         </div>
       </div>
+
+      {filtered.length > 0 && <AdBanner variant="strip" label="Sponsored" />}
 
       <div className="glass flex rounded-2xl p-1">
         {(["LIVE", "UPCOMING"] as const).map((tab) => (

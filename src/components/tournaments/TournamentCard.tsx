@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, Grid2X2, Play } from "lucide-react";
+import { Bell, Play } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { TournamentMatch } from "@/lib/types";
 import { buildWatchPath, countdownLabel, formatLocalStart } from "@/lib/tournaments";
@@ -15,7 +15,7 @@ interface Props {
 }
 
 export function TournamentCard({ match, compact = false }: Props) {
-  const { profile, openProModal, signInWithGoogle } = useApp();
+  const { profile, signInWithGoogle } = useApp();
   const [notified, setNotified] = useState(false);
   const watchPath = buildWatchPath(match);
   const isLive = match.status === "LIVE";
@@ -44,19 +44,6 @@ export function TournamentCard({ match, compact = false }: Props) {
       e.preventDefault();
       await signInWithGoogle(watchPath);
     }
-  }
-
-  function onMultiView() {
-    if (!watchPath) return;
-    if (!profile) {
-      void signInWithGoogle(watchPath);
-      return;
-    }
-    if (profile.subscription_tier !== "pro") {
-      openProModal({ highlight: "multi-view" });
-      return;
-    }
-    window.location.href = `${watchPath}${watchPath.includes("?") ? "&" : "?"}multiview=1`;
   }
 
   return (
@@ -130,14 +117,6 @@ export function TournamentCard({ match, compact = false }: Props) {
               <Bell size={13} /> {notified ? "Reminder On" : "Notify Me"}
             </button>
           )}
-          <button
-            type="button"
-            onClick={onMultiView}
-            disabled={!watchPath}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gold/40 bg-gold/10 px-3 py-2 text-xs font-bold text-gold disabled:opacity-40"
-          >
-            <Grid2X2 size={13} /> Multi-View
-          </button>
         </div>
       </div>
     </article>

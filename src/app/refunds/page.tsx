@@ -6,15 +6,14 @@ export default function RefundsPage() {
   return (
     <LegalShell title="Refund & Cancellation Policy">
       <p>
-        This policy covers GamePlay Live Pro digital subscriptions processed by Stripe. It is designed to meet
-        App Store review and Stripe verification expectations for clear cancellation and refund terms.
+        This policy covers GamePlay Live Creator Pro digital subscriptions processed by Cashfree (₹99/mo).
       </p>
       <h2>1. Cancellation</h2>
       <ul>
         <li>
-          You may cancel auto-renewal at any time from the Stripe customer portal or by emailing{" "}
-          <a className="text-cyan" href="mailto:support@gameplaylive.app">
-            support@gameplaylive.app
+          You may cancel auto-renewal at any time from your Cashfree / bank mandate controls or by emailing{" "}
+          <a className="text-cyan" href="mailto:gameplayliveapp@gmail.com">
+            gameplayliveapp@gmail.com
           </a>
           .
         </li>
@@ -32,7 +31,7 @@ export default function RefundsPage() {
           billing error, duplicate charge, or were unable to access Pro features due to a GamePlay Live-side
           outage.
         </li>
-        <li>Refund requests should include the Google account email used on GamePlay Live and the Stripe receipt.</li>
+        <li>Refund requests should include the Google account email used on GamePlay Live and the Cashfree payment reference.</li>
       </ul>
       <h2>3. Chargebacks</h2>
       <p>
@@ -42,8 +41,8 @@ export default function RefundsPage() {
       <h2>4. How to request help</h2>
       <p>
         Email{" "}
-        <a className="text-cyan" href="mailto:support@gameplaylive.app">
-          support@gameplaylive.app
+        <a className="text-cyan" href="mailto:gameplayliveapp@gmail.com">
+          gameplayliveapp@gmail.com
         </a>{" "}
         with subject line &quot;Refund Request&quot; or use the{" "}
         <a className="text-cyan" href="/contact">

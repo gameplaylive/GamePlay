@@ -15,6 +15,9 @@ create table if not exists public.profiles (
   favorite_games text[] not null default '{}',
   preferred_language text not null default 'All',
   subscription_tier text not null default 'free' check (subscription_tier in ('free', 'pro')),
+  payment_provider text not null default 'cashfree',
+  cashfree_subscription_id text,
+  pro_expires_at timestamptz,
   stripe_customer_id text,
   is_banned boolean not null default false,
   updated_at timestamptz not null default now()
@@ -41,22 +44,63 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  initial_role text := 'user';
 begin
-  insert into public.profiles (id, email, full_name, avatar_url)
+  -- Platform owner — only this Google email becomes admin on first login
+  if lower(coalesce(new.email, '')) = 'gameplayliveapp@gmail.com' then
+    initial_role := 'admin';
+  end if;
+
+  insert into public.profiles (id, email, full_name, avatar_url, role)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', ''),
-    coalesce(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture', '')
+    coalesce(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture', ''),
+    initial_role
   )
   on conflict (id) do update set
     email = excluded.email,
     full_name = coalesce(nullif(excluded.full_name, ''), profiles.full_name),
     avatar_url = coalesce(nullif(excluded.avatar_url, ''), profiles.avatar_url),
+    role = case
+      when lower(coalesce(excluded.email, '')) = 'gameplayliveapp@gmail.com' then 'admin'
+      else profiles.role
+    end,
     updated_at = now();
   return new;
 end;
 $$;
+
+-- Block non-admins from changing role / Pro / ban / Stripe fields on their own row
+create or replace function public.protect_profile_privileges()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    return new;
+  end if;
+  if not public.is_admin() then
+    new.role := old.role;
+    new.subscription_tier := old.subscription_tier;
+    new.is_banned := old.is_banned;
+    new.stripe_customer_id := old.stripe_customer_id;
+    new.payment_provider := old.payment_provider;
+    new.cashfree_subscription_id := old.cashfree_subscription_id;
+    new.pro_expires_at := old.pro_expires_at;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_profile_privileges on public.profiles;
+create trigger protect_profile_privileges
+  before update on public.profiles
+  for each row execute function public.protect_profile_privileges();
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
@@ -82,18 +126,24 @@ create policy "Admins can update any profile"
 -- ---------------------------------------------------------------------------
 create table if not exists public.app_settings (
   id int primary key default 1 check (id = 1),
-  pro_price_usd numeric(10,2) not null default 2.00,
+  pro_price_usd numeric(10,2) not null default 99.00,
   pro_plan_name text not null default 'GamePlay Live Pro',
   pro_plan_description text not null default 'Ad-free streaming, 2x2 Multi-Stream Grid, and Gold Pro Badge',
   stripe_price_id text not null default '',
   stripe_secret_key text not null default '',
   stripe_webhook_secret text not null default '',
+  cashfree_app_id text not null default '',
+  cashfree_secret_key text not null default '',
+  cashfree_env text not null default 'sandbox' check (cashfree_env in ('sandbox', 'production')),
   youtube_api_key text not null default '',
   twitch_client_id text not null default '',
   twitch_client_secret text not null default '',
   adsense_enabled boolean not null default true,
   adsense_publisher_id text not null default '',
   adsense_slot_id text not null default '',
+  admob_enabled boolean not null default true,
+  admob_app_id text not null default '',
+  admob_banner_unit_id text not null default '',
   last_sync_time timestamptz
 );
 
@@ -115,6 +165,9 @@ select
   adsense_enabled,
   adsense_publisher_id,
   adsense_slot_id,
+  admob_enabled,
+  admob_app_id,
+  admob_banner_unit_id,
   last_sync_time
 from public.app_settings;
 
@@ -757,6 +810,32 @@ create policy "Anyone can read tracked creators"
   using (true);
 
 -- ---------------------------------------------------------------------------
+-- watch_sessions + admin analytics views
+-- (full DDL also in migrations/20261118_admin_analytics.sql)
+-- ---------------------------------------------------------------------------
+create table if not exists public.watch_sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles (id) on delete set null,
+  stream_id text not null,
+  stream_title text not null default '',
+  streamer_name text not null default '',
+  game_slug text not null default '',
+  game_title text not null default '',
+  content_type text not null default 'live'
+    check (content_type in ('live', 'video', 'trending', 'tournament')),
+  platform text not null default 'youtube',
+  started_at timestamptz not null default now(),
+  last_heartbeat_at timestamptz not null default now(),
+  duration_seconds integer not null default 0 check (duration_seconds >= 0),
+  ended_at timestamptz
+);
+
+create index if not exists watch_sessions_game_idx on public.watch_sessions (game_slug, started_at desc);
+create index if not exists watch_sessions_streamer_idx on public.watch_sessions (streamer_name, duration_seconds desc);
+
+alter table public.watch_sessions enable row level security;
+
+-- ---------------------------------------------------------------------------
 -- Realtime
 -- ---------------------------------------------------------------------------
 alter publication supabase_realtime add table public.chat_messages;
@@ -771,7 +850,8 @@ alter publication supabase_realtime add table public.community_live_streams;
 revoke all on public.app_settings from anon;
 grant select (
   id, pro_price_usd, pro_plan_name, pro_plan_description,
-  adsense_enabled, adsense_publisher_id, adsense_slot_id, last_sync_time
+  adsense_enabled, adsense_publisher_id, adsense_slot_id,
+  admob_enabled, admob_app_id, admob_banner_unit_id, last_sync_time
 ) on public.app_settings to authenticated;
 
 grant select, update on public.app_settings to authenticated;

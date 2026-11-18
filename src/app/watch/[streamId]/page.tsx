@@ -58,12 +58,10 @@ export default async function WatchPage({ params, searchParams }: PageProps) {
       language: "English",
       updated_at: new Date().toISOString(),
     };
-    const startMulti = String(sp.multiview || "") === "1";
     return (
       <WatchClient
         stream={stream}
         related={MOCK_STREAMS.filter((s) => s.content_type === "live").slice(0, 6)}
-        startMulti={startMulti}
       />
     );
   }

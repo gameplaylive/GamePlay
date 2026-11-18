@@ -11,6 +11,7 @@ import {
   twitchGameIdBatch,
 } from "@/lib/default-games";
 import { recordSearchListCall } from "@/lib/youtube-quota";
+import { detectStreamLanguage } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -108,7 +109,7 @@ async function syncYoutubeLive(
         "",
       viewer_count: 0,
       published_at: item.snippet?.publishedAt || null,
-      language: "English",
+      language: detectStreamLanguage(title, description),
       raw: item,
       fetched_at: now,
     };
@@ -126,7 +127,7 @@ async function syncYoutubeLive(
       thumbnail_url: row.thumbnail_url,
       viewer_count: 0,
       published_at: item.snippet?.publishedAt || null,
-      language: "English",
+      language: row.language,
       updated_at: now,
     });
   }
@@ -197,7 +198,7 @@ async function syncTwitchLive(
       thumbnail_url: thumb,
       viewer_count: s.viewer_count || 0,
       published_at: s.started_at || null,
-      language: s.language === "en" ? "English" : s.language || "English",
+      language: mapTwitchLanguage(s.language),
       raw: s,
       fetched_at: now,
     });
@@ -214,7 +215,7 @@ async function syncTwitchLive(
       thumbnail_url: thumb,
       viewer_count: s.viewer_count || 0,
       published_at: s.started_at || null,
-      language: s.language === "en" ? "English" : s.language || "English",
+      language: mapTwitchLanguage(s.language),
       updated_at: now,
     });
   }
@@ -243,6 +244,25 @@ async function syncTwitchLive(
   }
 
   return { items: streamRows.length, batched_game_ids: gameIds.length, games: DEFAULT_GAMES.length };
+}
+
+function mapTwitchLanguage(code: unknown): string {
+  const c = String(code || "").toLowerCase();
+  const map: Record<string, string> = {
+    en: "English",
+    hi: "Hindi",
+    ta: "Tamil",
+    te: "Telugu",
+    kn: "Kannada",
+    ml: "Malayalam",
+    bn: "Bengali",
+    mr: "Marathi",
+    es: "Spanish",
+    pt: "Portuguese",
+    ko: "Korean",
+    ja: "Japanese",
+  };
+  return map[c] || (c ? c : "English");
 }
 
 export async function POST(request: Request) {

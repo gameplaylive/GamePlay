@@ -6,13 +6,15 @@ import { DEMO_PROFILE, MOCK_GAMES, MOCK_SETTINGS } from "@/lib/mock-data";
 import { DEFAULT_GAME_SLUGS } from "@/lib/default-games";
 import { createClient } from "@/lib/supabase/client";
 import { OnboardingModal } from "@/components/auth/OnboardingModal";
+import { AdSenseScript } from "@/components/AdSenseScript";
+import { NativeAdMobSync } from "@/components/NativeAdMobSync";
 import { ProBenefitsModal } from "@/components/ProBenefitsModal";
 import { YOUTUBE_OAUTH_SCOPE } from "@/lib/go-live";
 
 export interface ProModalOptions {
   /** Always show ₹99 INR pricing (default for all Pro CTAs). */
   inrPrice?: boolean;
-  highlight?: "go-live" | "favorites" | "multi-view" | "ads" | "reminders" | "default";
+  highlight?: "go-live" | "favorites" | "ads" | "reminders" | "default";
   /** Optional one-line contextual header above the title */
   contextTitle?: string;
 }
@@ -82,7 +84,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       .select("*")
       .eq("id", 1)
       .maybeSingle();
-    if (data) setSettings(data as AppSettingsPublic);
+    if (data) setSettings({ ...MOCK_SETTINGS, ...(data as AppSettingsPublic) });
   }, [supabase]);
 
   const loadFavorites = useCallback(
@@ -285,6 +287,8 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <AppContext.Provider value={value}>
+      <AdSenseScript />
+      <NativeAdMobSync />
       {children}
       {needsOnboarding && <OnboardingModal />}
       <ProBenefitsModal open={proModalOpen} onClose={closeProModal} options={proModalOptions} />

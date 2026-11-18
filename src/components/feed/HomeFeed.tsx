@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, UserPlus } from "lucide-react";
 import { StreamCard } from "@/components/feed/StreamCard";
@@ -35,20 +35,24 @@ export function HomeFeed() {
   }, [profile?.preferred_language]);
 
   useEffect(() => {
+    let cancelled = false;
     async function load() {
-      const supabase = createClient();
-      if (!supabase) {
-        setStreams(MOCK_STREAMS);
-        return;
+      try {
+        const res = await fetch("/api/streams/feed", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        if (Array.isArray(data.streams) && data.streams.length) {
+          setStreams(data.streams as CachedStream[]);
+        }
+      } catch {
+        // Keep last good feed (don't overwrite with mock after a successful load)
       }
-      const { data } = await supabase
-        .from("cached_streams")
-        .select("*")
-        .order("viewer_count", { ascending: false });
-      if (data?.length) setStreams(data as CachedStream[]);
-      else setStreams(MOCK_STREAMS);
     }
     void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -135,18 +139,18 @@ export function HomeFeed() {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl space-y-4 px-3 pb-10 pt-3 md:space-y-5 md:px-6 md:pt-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="font-display text-[1.85rem] font-bold tracking-tight text-white sm:text-4xl">
+    <div className="mx-auto max-w-7xl space-y-3 overflow-x-hidden px-3 pb-10 pt-3 md:space-y-5 md:px-6 md:pt-5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <h1 className="font-display text-[1.35rem] font-bold tracking-tight text-white sm:text-3xl md:text-4xl">
             Tap in. <span className="bg-gradient-to-r from-cyan to-purple bg-clip-text text-transparent">Watch.</span> Share.
           </h1>
         </div>
         <button
           onClick={() => setFavModal(true)}
-          className="mt-1 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-purple/40 bg-purple/20 px-3 py-2 text-[11px] font-bold text-white shadow-[0_0_24px_rgba(178,75,255,0.18)]"
+          className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-full border border-purple/40 bg-purple/20 px-2.5 py-1.5 text-[10px] font-bold text-white sm:gap-1.5 sm:px-3 sm:text-[11px]"
         >
-          <UserPlus size={14} />
+          <UserPlus size={13} />
           <span className="hidden sm:inline">Manage Favorites</span>
           <span className="sm:hidden">Favs</span>
         </button>
@@ -164,7 +168,7 @@ export function HomeFeed() {
             key={key}
             onClick={() => setTab(key)}
             className={cn(
-              "flex-1 rounded-xl px-2 py-2.5 text-[11px] font-bold tracking-wide transition sm:text-sm",
+              "flex-1 rounded-xl px-2 py-2 text-[11px] font-bold tracking-wide transition sm:text-sm sm:py-2.5",
               tab === key ? "tab-active" : "text-muted hover:text-white"
             )}
           >
@@ -174,37 +178,66 @@ export function HomeFeed() {
       </div>
 
       {tab !== "favorites" && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
-          {pills.map((p) => (
-            <button
-              key={p.key}
-              onClick={() => setGameFilter(p.key)}
-              className={cn(
-                "chip shrink-0 px-3 py-1.5 text-[11px] font-semibold",
-                gameFilter === p.key ? "chip-active" : "border-border-glow bg-white/[0.03] text-muted"
-              )}
-            >
-              {p.label}
-            </button>
-          ))}
-          <button
-            onClick={() => setEditGames(true)}
-            className="chip inline-flex shrink-0 items-center gap-1 border-dashed border-purple/45 bg-purple/10 px-3 py-1.5 text-[11px] font-semibold text-purple"
-          >
-            <Plus size={12} /> Edit
-          </button>
-          <select
-            value={language}
-            onChange={(e) => void saveLanguage(e.target.value)}
-            className="ml-auto shrink-0 rounded-full border border-border-glow bg-[#101420] px-3 py-1.5 text-[11px] outline-none"
-          >
-            {LANGUAGES.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
+        <>
+          <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
+            {pills.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => setGameFilter(p.key)}
+                className={cn(
+                  "chip shrink-0 px-3 py-1.5 text-[11px] font-semibold",
+                  gameFilter === p.key ? "chip-active" : "border-border-glow bg-white/[0.03] text-muted"
+                )}
+              >
+                {p.label}
+              </button>
             ))}
-          </select>
-        </div>
+            <button
+              onClick={() => setEditGames(true)}
+              className="chip inline-flex shrink-0 items-center gap-1 border-dashed border-purple/45 bg-purple/10 px-3 py-1.5 text-[11px] font-semibold text-purple"
+            >
+              <Plus size={12} /> Edit
+            </button>
+            <select
+              value={language}
+              onChange={(e) => void saveLanguage(e.target.value)}
+              aria-label="Filter by language"
+              className="ml-auto shrink-0 rounded-full border border-border-glow bg-[#101420] px-3 py-1.5 text-[11px] outline-none"
+            >
+              {LANGUAGES.map((l) => (
+                <option key={l} value={l}>
+                  {l === "All" ? "Language · All" : l}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {filtered.length === 0 ? (
+            <div className="glass rounded-2xl p-8 text-center text-sm text-muted">
+              No streams match these filters yet. Try another game or language, or check back after
+              the next feed sync.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {/* Max 2 ads on home — only when original feed content is present */}
+              <AdBanner variant="strip" label="Sponsored" />
+              <div className="flex items-center justify-between gap-2 px-0.5">
+                <p className="text-[11px] font-semibold text-muted">
+                  {filtered.length} {tab === "live" ? "live" : "videos"}
+                  {filtered.length > 7 ? " · scroll inside for more" : ""}
+                </p>
+              </div>
+              {/* Fixed window ~7 cards visible; extra lives scroll inside (not endless page) */}
+              <div className="max-h-[min(68vh,38rem)] overflow-y-auto overscroll-contain rounded-2xl border border-white/5 bg-black/20 p-2.5 scrollbar-thin md:max-h-[min(70vh,42rem)] md:p-3">
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 lg:gap-4">
+                  {filtered.map((stream) => (
+                    <StreamCard key={stream.id} stream={stream} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       <EventsPulseBar />
@@ -213,25 +246,32 @@ export function HomeFeed() {
 
       <FeaturedTournamentsStrip />
 
-      {tab !== "favorites" && (
-        <>
-          {/* Primary monetization strip — always under game filters for free users */}
-          <AdBanner variant="strip" />
+      {filtered.length > 0 && tab !== "favorites" && (
+        <AdBanner variant="strip" label="Sponsored" />
+      )}
 
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 lg:gap-4">
-            {filtered.map((stream, i) => (
-              <Fragment key={stream.id}>
-                <StreamCard stream={stream} />
-                {(i + 1) % 6 === 0 && <AdBanner variant="feed" />}
-              </Fragment>
-            ))}
-            {filtered.length === 0 && (
-              <div className="col-span-full glass rounded-2xl p-10 text-center text-muted">
-                No streams match these filters yet. Sync APIs from Admin or pick more games.
-              </div>
-            )}
-          </div>
-        </>
+      <section className="rounded-2xl border border-white/5 bg-white/[0.02] px-3 py-4 md:px-4">
+        <h2 className="font-display text-base font-bold text-white">Why GamePlay Live?</h2>
+        <ul className="mt-2 space-y-1.5 text-[11px] leading-relaxed text-muted md:text-xs">
+          <li>Official embeds only — creators keep ownership of their streams.</li>
+          <li>India-first filters (games + language) for BGMI, Free Fire, and more.</li>
+          <li>
+            Creator Pro unlocks Go Live Studio, alerts, and ad-free browsing for ₹99/mo via Cashfree.
+          </li>
+        </ul>
+      </section>
+
+      {tab !== "favorites" && (
+        <section className="rounded-2xl border border-white/5 bg-white/[0.02] px-3 py-3 md:px-4">
+          <h2 className="font-display text-sm font-bold text-white md:text-base">
+            {tab === "live" ? "Live gameplay discovery" : "Latest & trending gameplay"}
+          </h2>
+          <p className="mt-1 text-[11px] leading-relaxed text-muted md:text-xs">
+            GamePlay Live curates public YouTube and Twitch streams for BGMI, Free Fire, Valorant,
+            GTA V, Minecraft, Roblox, CS2, Dota 2, Fortnite, and Call of Duty. Filter by game or
+            language, then open a single official player — we never rehost creator video.
+          </p>
+        </section>
       )}
 
       {tab === "favorites" && (
@@ -265,15 +305,15 @@ export function HomeFeed() {
                     className="object-cover"
                     unoptimized
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#07090f] via-transparent to-transparent" />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
                   {f.is_live && (
                     <span className="live-pulse absolute left-1.5 top-1.5 rounded-md bg-crimson px-1.5 py-0.5 text-[9px] font-black text-white">
                       LIVE
                     </span>
                   )}
-                  <div className="absolute inset-x-0 bottom-0 space-y-0.5 p-2">
-                    <p className="truncate font-display text-[12px] font-bold">{f.channel_name}</p>
-                    <p className="line-clamp-1 text-[10px] text-white/55">
+                  <div className="absolute inset-x-0 bottom-0 space-y-0.5 p-1.5">
+                    <p className="truncate text-[11px] font-semibold text-white">{f.channel_name}</p>
+                    <p className="truncate text-[9px] text-white/55">
                       {f.is_live
                         ? `${f.live_title || "Live now"} · ${formatViewers(f.live_viewer_count || 0)}`
                         : f.latest_video_title || "Offline"}
@@ -281,7 +321,7 @@ export function HomeFeed() {
                     {f.is_live && f.live_external_id && (
                       <Link
                         href={`/watch/fav-${f.platform}-${encodeURIComponent(f.channel_id_or_username)}?platform=${f.platform}&external=${encodeURIComponent(f.live_external_id)}&type=live&title=${encodeURIComponent(f.live_title || f.channel_name)}&streamer=${encodeURIComponent(f.channel_name)}`}
-                        className="inline-block text-[10px] font-bold text-cyan"
+                        className="inline-block text-[9px] font-bold text-cyan"
                         onClick={(e) => {
                           if (!profile) {
                             e.preventDefault();

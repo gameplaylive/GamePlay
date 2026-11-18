@@ -1,7 +1,7 @@
 {
   "name": "GamePlay Live",
   "short_name": "GamePlay",
-  "description": "High-energy gaming streams and latest videos — watch, share, multi-view.",
+  "description": "Creator-first gaming hub — watch live, go live to YouTube, tournament ops.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#07090F",

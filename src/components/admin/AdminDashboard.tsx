@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useApp } from "@/components/providers/AppProviders";
+import { AdminAnalyticsPanel } from "@/components/admin/AdminAnalyticsPanel";
+import { AdminAdEarningsPanel } from "@/components/admin/AdminAdEarningsPanel";
 import { MOCK_GAMES, MOCK_SETTINGS, MOCK_STREAMS } from "@/lib/mock-data";
 import type { AppSettings, Game, Profile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
-type Tab = "overview" | "pricing" | "users" | "games" | "vault";
+type Tab = "analytics" | "ads" | "overview" | "pricing" | "users" | "games" | "vault";
 
 function mask(value: string) {
   if (!value) return "";
@@ -31,7 +33,7 @@ function StatusBadge({ ok }: { ok: boolean }) {
 export function AdminDashboard() {
   const { profile, loading, demoMode } = useApp();
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTab] = useState<Tab>("analytics");
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [users, setUsers] = useState<Profile[]>([]);
   const [games, setGames] = useState<Game[]>(MOCK_GAMES);
@@ -75,9 +77,6 @@ export function AdminDashboard() {
       } else {
         setSettings({
           ...MOCK_SETTINGS,
-          stripe_price_id: "",
-          stripe_secret_key: "",
-          stripe_webhook_secret: "",
           youtube_api_key: "",
           twitch_client_id: "",
           twitch_client_secret: "",
@@ -105,9 +104,6 @@ export function AdminDashboard() {
     } catch {
       setSettings({
         ...MOCK_SETTINGS,
-        stripe_price_id: "",
-        stripe_secret_key: "",
-        stripe_webhook_secret: "",
         youtube_api_key: "",
         twitch_client_id: "",
         twitch_client_secret: "",
@@ -143,7 +139,7 @@ export function AdminDashboard() {
       }),
     });
     const data = await res.json();
-    setMessage(res.ok ? `Pricing saved${data.stripe_price_id ? ` · Stripe price ${data.stripe_price_id}` : ""}` : data.error);
+    setMessage(res.ok ? `Pricing saved · ₹${data.amount ?? settings.pro_price_usd}/mo (Cashfree INR)` : data.error);
   }
 
   async function saveVault() {
@@ -196,7 +192,9 @@ export function AdminDashboard() {
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: "overview", label: "Overview" },
+    { id: "analytics", label: "Analytics" },
+    { id: "ads", label: "Ad Earnings" },
+    { id: "overview", label: "Sync" },
     { id: "pricing", label: "Pricing" },
     { id: "users", label: "Users" },
     { id: "games", label: "Games" },
@@ -237,6 +235,10 @@ export function AdminDashboard() {
       </div>
 
       {message && <p className="rounded-xl border border-border-glow bg-white/5 px-4 py-2 text-sm text-cyan">{message}</p>}
+
+      {tab === "analytics" && <AdminAnalyticsPanel />}
+
+      {tab === "ads" && <AdminAdEarningsPanel />}
 
       {tab === "overview" && (
         <div className="space-y-4">
@@ -290,18 +292,19 @@ export function AdminDashboard() {
             />
           </label>
           <label className="block text-sm">
-            Monthly price (USD)
+            Monthly price (INR ₹)
             <input
               type="number"
               min={1}
-              step={0.01}
+              step={1}
               className="mt-1 w-full rounded-xl border border-border-glow bg-obsidian/50 px-3 py-2"
               value={settings.pro_price_usd}
               onChange={(e) => setSettings({ ...settings, pro_price_usd: Number(e.target.value) })}
             />
           </label>
+          <p className="text-xs text-muted">Charged in India via Cashfree (UPI / cards / netbanking).</p>
           <button onClick={() => void savePricing()} className="rounded-xl bg-gold px-5 py-2.5 text-sm font-bold text-obsidian">
-            Save & sync Stripe price
+            Save pricing
           </button>
         </div>
       )}
@@ -444,14 +447,43 @@ export function AdminDashboard() {
 
       {tab === "vault" && settings && (
         <div className="glass max-w-2xl space-y-4 rounded-2xl p-5">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted">Streaming APIs</p>
           {(
             [
               ["youtube_api_key", "YOUTUBE_API_KEY"],
               ["twitch_client_id", "TWITCH_CLIENT_ID"],
               ["twitch_client_secret", "TWITCH_CLIENT_SECRET"],
-              ["stripe_secret_key", "STRIPE_SECRET_KEY"],
-              ["stripe_webhook_secret", "STRIPE_WEBHOOK_SECRET"],
-              ["adsense_publisher_id", "ADSENSE_PUBLISHER_ID"],
+            ] as const
+          ).map(([key, label]) => (
+            <label key={key} className="block text-sm">
+              <span className="mb-1 flex items-center justify-between gap-2">
+                <span>{label}</span>
+                <StatusBadge ok={Boolean(settings[key])} />
+              </span>
+              <input
+                type="password"
+                autoComplete="off"
+                placeholder={settings[key] ? mask(String(settings[key])) : "Paste secret…"}
+                className="w-full rounded-xl border border-border-glow bg-obsidian/50 px-3 py-2"
+                onChange={(e) => setSettings({ ...settings, [key]: e.target.value })}
+              />
+            </label>
+          ))}
+
+          <p className="rounded-xl border border-cyan/20 bg-cyan/5 px-3 py-2 text-[11px] text-muted">
+            Cashfree keys live in server env only:{" "}
+            <code className="text-cyan">CASHFREE_APP_ID</code>,{" "}
+            <code className="text-cyan">CASHFREE_SECRET_KEY</code>,{" "}
+            <code className="text-cyan">CASHFREE_PLAN_ID_INR</code>,{" "}
+            <code className="text-cyan">CASHFREE_WEBHOOK_SECRET</code>,{" "}
+            <code className="text-cyan">CASHFREE_ENV</code>. Webhook:{" "}
+            <code className="text-cyan">/api/cashfree/webhook</code>
+          </p>
+
+          <p className="pt-2 text-xs font-bold uppercase tracking-wider text-muted">AdSense (web / browser)</p>
+          {(
+            [
+              ["adsense_publisher_id", "ADSENSE_PUBLISHER_ID (ca-pub-…)"],
               ["adsense_slot_id", "ADSENSE_SLOT_ID"],
             ] as const
           ).map(([key, label]) => (
@@ -463,7 +495,7 @@ export function AdminDashboard() {
               <input
                 type="password"
                 autoComplete="off"
-                placeholder={settings[key] ? mask(settings[key]) : "Paste secret…"}
+                placeholder={settings[key] ? mask(String(settings[key])) : "Paste…"}
                 className="w-full rounded-xl border border-border-glow bg-obsidian/50 px-3 py-2"
                 onChange={(e) => setSettings({ ...settings, [key]: e.target.value })}
               />
@@ -475,8 +507,44 @@ export function AdminDashboard() {
               checked={settings.adsense_enabled}
               onChange={(e) => setSettings({ ...settings, adsense_enabled: e.target.checked })}
             />
-            AdSense enabled for free tier
+            AdSense enabled for free tier (web)
           </label>
+
+          <p className="pt-2 text-xs font-bold uppercase tracking-wider text-muted">AdMob (Android app)</p>
+          {(
+            [
+              ["admob_app_id", "ADMOB_APP_ID (ca-app-pub-…~…)"],
+              ["admob_banner_unit_id", "ADMOB_BANNER_UNIT_ID (ca-app-pub-…/…)"],
+            ] as const
+          ).map(([key, label]) => (
+            <label key={key} className="block text-sm">
+              <span className="mb-1 flex items-center justify-between gap-2">
+                <span>{label}</span>
+                <StatusBadge ok={Boolean(settings[key])} />
+              </span>
+              <input
+                type="text"
+                autoComplete="off"
+                placeholder={settings[key] ? String(settings[key]) : "Paste from AdMob console…"}
+                className="w-full rounded-xl border border-border-glow bg-obsidian/50 px-3 py-2"
+                onChange={(e) => setSettings({ ...settings, [key]: e.target.value })}
+              />
+            </label>
+          ))}
+          <label className="flex items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={settings.admob_enabled !== false}
+              onChange={(e) => setSettings({ ...settings, admob_enabled: e.target.checked })}
+            />
+            AdMob banners enabled for free tier (Android APK)
+          </label>
+          <p className="text-[11px] text-muted">
+            After saving real AdMob IDs, also paste them into{" "}
+            <code className="text-cyan">android-native</code> Manifest +{" "}
+            <code className="text-cyan">strings.xml</code> before a Play Store build.
+          </p>
+
           <button onClick={() => void saveVault()} className="rounded-xl bg-gold px-5 py-2.5 text-sm font-bold text-obsidian">
             Save vault
           </button>

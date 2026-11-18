@@ -2,7 +2,8 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
 
 const links = [
-  { href: "/privacy", label: "Privacy" },
+  { href: "/about", label: "About" },
+  { href: "/privacy-policy", label: "Privacy Policy" },
   { href: "/terms", label: "Terms" },
   { href: "/refunds", label: "Refunds" },
   { href: "/contact", label: "Contact" },
@@ -15,7 +16,14 @@ export function Footer() {
         <div>
           <BrandLogo size="sm" withWordmark />
           <p className="mt-2 max-w-md text-sm text-muted">
-            Watch live gameplay & latest videos. Share in one tap.
+            GamePlay Live curates public YouTube &amp; Twitch gameplay, tournaments, and Creator Pro
+            studio tools. Streams remain property of their creators.
+          </p>
+          <p className="mt-2 text-xs text-muted">
+            Support:{" "}
+            <a className="text-cyan hover:underline" href="mailto:gameplayliveapp@gmail.com">
+              gameplayliveapp@gmail.com
+            </a>
           </p>
         </div>
         <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium text-muted">
@@ -27,7 +35,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-white/5 px-4 py-3 text-center text-[11px] text-muted">
-        © {new Date().getFullYear()} GamePlay Live · Streams remain property of their creators
+        © {new Date().getFullYear()} GamePlay Live · Cornerstone Studios · gameplaylive.live
       </div>
     </footer>
   );

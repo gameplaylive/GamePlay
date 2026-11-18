@@ -40,6 +40,9 @@ dependencies {
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
+  // AdMob — native banners for the Android shell (web uses AdSense)
+  implementation("com.google.android.gms:play-services-ads:23.6.0")
+
   // RootEncoder (formerly rtmp-rtsp-stream-client-java) — on-device RTMP/RTMPS
   // https://github.com/pedroSG94/RootEncoder
   implementation("com.github.pedroSG94.RootEncoder:library:2.4.6")

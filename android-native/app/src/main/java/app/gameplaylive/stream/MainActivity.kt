@@ -8,9 +8,10 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.gms.ads.AdView
 
 /**
- * Minimal WebView shell hosting GamePlay Live + AndroidStreamBridge.
+ * WebView shell hosting GamePlay Live + AndroidStreamBridge + sticky AdMob banner.
  * Replace WEB_URL with your production / staging host.
  */
 class MainActivity : AppCompatActivity() {
@@ -21,12 +22,17 @@ class MainActivity : AppCompatActivity() {
   }
 
   private lateinit var webView: WebView
+  private lateinit var adMob: AdMobManager
 
   @SuppressLint("SetJavaScriptEnabled")
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    webView = WebView(this)
-    setContentView(webView)
+    setContentView(R.layout.activity_main)
+
+    webView = findViewById(R.id.webView)
+    val adView = findViewById<AdView>(R.id.adView)
+    adMob = AdMobManager(this, adView)
+    adMob.initialize()
 
     CookieManager.getInstance().setAcceptCookie(true)
     CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
@@ -47,13 +53,29 @@ class MainActivity : AppCompatActivity() {
         apiBaseUrl = API_BASE,
         authCookieProvider = {
           CookieManager.getInstance().getCookie(API_BASE).orEmpty()
-        }
+        },
+        bannerAdsController = { enabled -> adMob.setBannerAdsEnabled(enabled) }
       ),
       "AndroidStreamBridge"
     )
 
     val deep = intent?.data?.toString()
     webView.loadUrl(deep ?: WEB_URL)
+  }
+
+  override fun onResume() {
+    super.onResume()
+    if (::adMob.isInitialized) adMob.resume()
+  }
+
+  override fun onPause() {
+    if (::adMob.isInitialized) adMob.pause()
+    super.onPause()
+  }
+
+  override fun onDestroy() {
+    if (::adMob.isInitialized) adMob.destroy()
+    super.onDestroy()
   }
 
   @Deprecated("Deprecated in Java")

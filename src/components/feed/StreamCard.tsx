@@ -53,7 +53,8 @@ export function StreamCard({ stream }: { stream: CachedStream }) {
             sizes="(max-width:768px) 50vw, 33vw"
             unoptimized
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#07090f] via-[#07090f]/25 to-transparent" />
+          {/* Light bottom fade only — keep most of the thumbnail clear */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
 
           <div className="absolute left-1.5 top-1.5 flex items-center gap-1">
             {isLive ? (
@@ -71,23 +72,24 @@ export function StreamCard({ stream }: { stream: CachedStream }) {
             {stream.platform}
           </span>
 
-          <div className="absolute inset-x-0 bottom-0 space-y-1 p-2">
+          {/* Compact standardized footer — single-line title, fixed size */}
+          <div className="absolute inset-x-0 bottom-0 space-y-0.5 p-1.5">
             <div className="flex items-center justify-between gap-1">
-              <span className="max-w-[65%] truncate rounded-md bg-cyan/15 px-1.5 py-0.5 text-[8px] font-semibold text-cyan backdrop-blur-sm">
+              <span className="max-w-[70%] truncate rounded bg-black/45 px-1 py-0.5 text-[8px] font-semibold text-cyan/95 backdrop-blur-sm">
                 {stream.game_title}
               </span>
-              <span className="shrink-0 rounded-md bg-black/55 px-1.5 py-0.5 text-[8px] font-semibold text-white/90 backdrop-blur-sm">
+              <span className="shrink-0 rounded bg-black/45 px-1 py-0.5 text-[8px] font-semibold text-white/85 backdrop-blur-sm">
                 {isLive ? formatViewers(stream.viewer_count) : timeAgo(stream.published_at)}
               </span>
             </div>
-            <h3 className="line-clamp-2 font-display text-[12px] font-bold leading-tight text-white sm:text-[13px]">
+            <h3 className="truncate text-[11px] font-semibold leading-snug text-white">
               {stream.title}
             </h3>
             <div className="flex items-center justify-between gap-1">
-              <p className="truncate text-[10px] text-white/55">{stream.streamer_name}</p>
+              <p className="truncate text-[9px] text-white/55">{stream.streamer_name}</p>
               <button
                 onClick={onShare}
-                className="rounded-full bg-white/10 p-1 text-white/70 transition hover:bg-cyan/20 hover:text-cyan"
+                className="rounded-full bg-black/40 p-1 text-white/70 transition hover:bg-cyan/20 hover:text-cyan"
                 aria-label="Share"
               >
                 <Share2 size={11} />

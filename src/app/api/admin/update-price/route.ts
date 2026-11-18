@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { getStripeClient } from "@/lib/settings";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -30,29 +29,15 @@ export async function POST(request: Request) {
   const service = createServiceClient();
   if (!service) return NextResponse.json({ error: "Service role missing" }, { status: 503 });
 
-  let stripePriceId = "";
-  const { stripe } = await getStripeClient();
-  if (stripe) {
-    const product = await stripe.products.create({ name, description });
-    const priceObj = await stripe.prices.create({
-      product: product.id,
-      unit_amount: Math.round(price * 100),
-      currency: "usd",
-      recurring: { interval: "month" },
-    });
-    stripePriceId = priceObj.id;
-  }
-
   const { error } = await service
     .from("app_settings")
     .update({
       pro_price_usd: price,
       pro_plan_name: name,
       pro_plan_description: description,
-      ...(stripePriceId ? { stripe_price_id: stripePriceId } : {}),
     })
     .eq("id", 1);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true, stripe_price_id: stripePriceId || null });
+  return NextResponse.json({ ok: true, currency: "INR", amount: price });
 }

@@ -3,6 +3,8 @@
 import { FormEvent, useState } from "react";
 import { LegalShell } from "@/components/legal/LegalShell";
 
+const SUPPORT_EMAIL = "gameplayliveapp@gmail.com";
+
 export default function ContactPage() {
   const [sent, setSent] = useState(false);
 
@@ -14,20 +16,26 @@ export default function ContactPage() {
     const message = String(form.get("message") || "");
     const subject = encodeURIComponent(`GamePlay Live support from ${name}`);
     const body = encodeURIComponent(`From: ${name} <${email}>\n\n${message}`);
-    window.location.href = `mailto:support@gameplaylive.app?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
     setSent(true);
   }
 
   return (
     <LegalShell title="Contact Us">
       <p>
-        Need help with Pro billing, account access, or App Store / Stripe verification documents? Reach us
-        at{" "}
-        <a className="text-cyan" href="mailto:support@gameplaylive.app">
-          support@gameplaylive.app
-        </a>
-        .
+        Need help with Creator Pro (Cashfree), Google sign-in, AdSense / AdMob verification, or
+        general support? Email us directly or use the form below.
       </p>
+      <p className="rounded-xl border border-cyan/20 bg-cyan/5 px-4 py-3 text-sm">
+        Official support:{" "}
+        <a className="font-semibold text-cyan" href={`mailto:${SUPPORT_EMAIL}`}>
+          {SUPPORT_EMAIL}
+        </a>
+      </p>
+      <p className="text-sm text-muted">
+        Publisher / site: gameplaylive.live · Operator: Cornerstone Studios
+      </p>
+
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
         <label className="block text-sm">
           Name

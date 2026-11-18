@@ -103,34 +103,36 @@ function NavInner() {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-white/5 bg-[#07090f]/80 backdrop-blur-2xl md:hidden">
-        <div className="flex h-14 items-center justify-between gap-2 px-3">
-          <BrandLogo size="sm" withWordmark priority />
-          <div className="flex items-center gap-2">
+        <div className="flex h-12 max-w-[100vw] items-center gap-1.5 overflow-hidden px-2.5">
+          <div className="min-w-0 shrink">
+            <BrandLogo size="xs" withWordmark priority className="!h-7 !w-[6.5rem]" />
+          </div>
+          <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1">
             <NotificationBell />
             <Link
               href="/go-live"
               onClick={goLiveClick}
               className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide",
+                "inline-flex items-center gap-0.5 rounded-full border px-2 py-1 text-[9px] font-bold uppercase tracking-wide",
                 pathname.startsWith("/go-live")
                   ? "border-crimson/50 bg-crimson/20 text-white"
                   : "border-crimson/35 bg-crimson/10 text-white"
               )}
             >
-              <Radio size={12} className="text-crimson" />
-              Go Live
+              <Radio size={11} className="text-crimson" />
+              <span className="max-[360px]:hidden">Live</span>
             </Link>
             <Link
               href="/tournaments"
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide",
+                "inline-flex items-center gap-0.5 rounded-full border px-2 py-1 text-[9px] font-bold uppercase tracking-wide",
                 pathname.startsWith("/tournaments")
                   ? "border-gold/50 bg-gold/15 text-gold"
                   : "border-white/10 text-white"
               )}
             >
-              <Trophy size={12} />
-              Cups
+              <Trophy size={11} />
+              <span className="max-[360px]:hidden">Cups</span>
               <LiveDot show={hasLiveTournament} />
             </Link>
             {profile ? (
@@ -139,18 +141,18 @@ function NavInner() {
                   if (profile.subscription_tier !== "pro") openProModal({ highlight: "default" });
                 }}
                 className={cn(
-                  "rounded-full px-3 py-1.5 text-xs font-bold",
+                  "rounded-full px-2 py-1 text-[10px] font-bold",
                   profile.subscription_tier === "pro"
                     ? "border border-gold/50 text-gold"
                     : "bg-gradient-to-r from-[#2F8F62] to-[#C9A227] text-[#0B100C]"
                 )}
               >
-                {profile.subscription_tier === "pro" ? "PRO" : "Unlock Pro"}
+                {profile.subscription_tier === "pro" ? "PRO" : "Pro"}
               </button>
             ) : (
               <button
                 onClick={() => void signInWithGoogle()}
-                className="btn-primary rounded-full px-3 py-1.5 text-xs"
+                className="btn-primary rounded-full px-2.5 py-1 text-[10px]"
               >
                 Sign in
               </button>
@@ -245,19 +247,12 @@ function NavInner() {
           {mobileItems.map((item) => {
             const active = item.match(pathname, tab);
             const Icon = item.icon;
-            const isProItem = item.label === "Pro";
             const isTournaments = item.label === "Tournaments";
-            const label =
-              isProItem && profile?.subscription_tier === "pro"
-                ? "Profile"
-                : isTournaments
-                  ? "Cups"
-                  : item.label;
-            const href = isProItem && profile?.subscription_tier === "pro" ? "/profile" : item.href;
+            const label = isTournaments ? "Cups" : item.label;
             return (
               <Link
                 key={item.href}
-                href={href}
+                href={item.href}
                 className={cn(
                   "relative flex min-w-[48px] flex-col items-center gap-0.5 rounded-xl px-1.5 py-1 text-[9px] font-bold uppercase tracking-wide transition",
                   active ? "text-cyan" : "text-muted"
