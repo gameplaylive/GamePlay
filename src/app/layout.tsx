@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
-import Script from "next/script";
 import { Outfit, Syne } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/components/providers/AppProviders";
@@ -39,6 +38,9 @@ export const metadata: Metadata = {
     icon: "/icons/icon-192.png",
     apple: "/icons/icon-192.png",
   },
+  other: {
+    "google-adsense-account": "ca-pub-5165582915599822",
+  },
 };
 
 export const viewport: Viewport = {
@@ -54,13 +56,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${outfit.variable} ${syne.variable} h-full antialiased`}>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        {/* Static in HTML so AdSense crawler can verify (not client-only). */}
-        <Script
-          id="google-adsense"
+        {/* Plain script in head so AdSense crawlers see ca-pub without waiting on hydration. */}
+        <script
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(ADSENSE_CLIENT)}`}
           crossOrigin="anonymous"
-          strategy="beforeInteractive"
         />
       </head>
       <body className="flex min-h-full flex-col overflow-x-hidden">
