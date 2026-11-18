@@ -1,0 +1,11 @@
+# Next.js on Netlify — OpenNext adapter handles output automatically.
+# Do NOT set a custom publish directory (that causes empty-site 404s).
+
+[build]
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
