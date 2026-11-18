@@ -23,7 +23,7 @@ export function AdSenseScript() {
   const clientId =
     settings.adsense_publisher_id?.trim() ||
     process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() ||
-    "";
+    "ca-pub-5165582915599822";
 
   if (loading || nativeApp || !settings.adsense_enabled || !clientId) {
     return null;

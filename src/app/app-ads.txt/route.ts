@@ -11,7 +11,7 @@ export async function GET() {
   const raw =
     settings.adsense_publisher_id?.trim() ||
     process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() ||
-    "";
+    "ca-pub-5165582915599822";
   const pub = raw.replace(/^ca-/i, "");
 
   const lines: string[] = [
@@ -22,9 +22,7 @@ export async function GET() {
   if (pub.startsWith("pub-") && !pub.includes("0000000000000000")) {
     lines.push(`google.com, ${pub}, DIRECT, f08c47fec0942fa0`);
   } else {
-    lines.push(
-      "# Pending: set the same Google publisher id used for AdMob (pub-…) once approved"
-    );
+    lines.push("google.com, pub-5165582915599822, DIRECT, f08c47fec0942fa0");
   }
 
   lines.push("");

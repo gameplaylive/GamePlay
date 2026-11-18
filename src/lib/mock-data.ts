@@ -117,9 +117,10 @@ export const MOCK_SETTINGS: AppSettingsPublic = {
   id: 1,
   pro_price_usd: 99,
   pro_plan_name: "GamePlay Live Pro",
-  pro_plan_description: "Creator Pro: Go Live Studio, alerts, and ad-free browsing",
+  pro_plan_description:
+    "Creator Pro: Go Live Studio, 15 Favorite slots, Squad Finder unlimited, Discord alerts",
   adsense_enabled: true,
-  adsense_publisher_id: "",
+  adsense_publisher_id: "ca-pub-5165582915599822",
   adsense_slot_id: "",
   admob_enabled: true,
   admob_app_id: "",

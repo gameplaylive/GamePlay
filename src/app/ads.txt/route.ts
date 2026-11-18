@@ -12,9 +12,10 @@ export async function GET() {
   const raw =
     settings.adsense_publisher_id?.trim() ||
     process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() ||
-    "";
+    "ca-pub-5165582915599822";
 
-  const pub = raw.replace(/^ca-/i, ""); // ads.txt wants pub-XXXX not ca-pub-XXXX
+  // Google ads.txt requires pub-XXXX (script tag uses ca-pub-XXXX)
+  const pub = raw.replace(/^ca-/i, "");
   const lines: string[] = [
     "# GamePlay Live — Google AdSense authorized sellers",
     "# https://gameplaylive.live/ads.txt",
@@ -23,10 +24,7 @@ export async function GET() {
   if (pub.startsWith("pub-") && !pub.includes("0000000000000000")) {
     lines.push(`google.com, ${pub}, DIRECT, f08c47fec0942fa0`);
   } else {
-    lines.push(
-      "# Pending: set adsense_publisher_id (ca-pub-…) in Admin vault or NEXT_PUBLIC_ADSENSE_CLIENT_ID"
-    );
-    lines.push("# Example: google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0");
+    lines.push("google.com, pub-5165582915599822, DIRECT, f08c47fec0942fa0");
   }
 
   lines.push("");
