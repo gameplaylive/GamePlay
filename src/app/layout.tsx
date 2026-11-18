@@ -1,9 +1,15 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
+import Script from "next/script";
 import { Outfit, Syne } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
+import { PageBackBar } from "@/components/BackButton";
+
+const ADSENSE_CLIENT =
+  process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() || "ca-pub-5165582915599822";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -48,11 +54,22 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${outfit.variable} ${syne.variable} h-full antialiased`}>
       <head>
         <link rel="manifest" href="/manifest.json" />
+        {/* Static in HTML so AdSense crawler can verify (not client-only). */}
+        <Script
+          id="google-adsense"
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(ADSENSE_CLIENT)}`}
+          crossOrigin="anonymous"
+          strategy="beforeInteractive"
+        />
       </head>
       <body className="flex min-h-full flex-col overflow-x-hidden">
         <AppProviders>
           <NavBar />
-          <main className="min-w-0 flex-1 overflow-x-hidden">{children}</main>
+          <Suspense fallback={null}>
+            <PageBackBar />
+          </Suspense>
+          <main className="min-w-0 max-w-[100vw] flex-1 overflow-x-hidden">{children}</main>
           <Footer />
         </AppProviders>
       </body>
