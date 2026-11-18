@@ -51,6 +51,10 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
+    // Dev/Turbopack needs inline/eval scripts; strict CSP is for production (Netlify) only.
+    if (process.env.NODE_ENV !== "production") {
+      return [];
+    }
     return [
       {
         source: "/:path*",
