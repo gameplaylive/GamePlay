@@ -81,23 +81,24 @@ export function AdBanner({ variant = "strip", className, label = "Sponsored" }: 
 
   if (!loading && !adsEnabled) return null;
 
+  // Strip = thin leaderboard bar only (never tall/auto rectangles).
   const sizeClass =
     variant === "strip"
-      ? "min-h-[56px] py-1.5"
+      ? "h-[56px] max-h-[56px] py-1"
       : variant === "sidebar"
         ? "min-h-[250px] py-3"
-        : "min-h-[72px] py-2";
+        : "h-[72px] max-h-[72px] py-1.5";
 
   if (!showRealAd) {
     return (
       <div
         className={cn(
-          "ad-strip flex w-full items-center justify-between gap-3 rounded-xl border border-cyan/25 px-3 text-left",
+          "ad-strip flex w-full items-center justify-between gap-3 overflow-hidden rounded-xl border border-cyan/25 px-3 text-left",
           variant === "strip"
-            ? "min-h-[56px]"
+            ? "h-[56px] max-h-[56px]"
             : variant === "sidebar"
               ? "min-h-[250px] flex-col justify-center gap-4"
-              : "min-h-[72px]",
+              : "h-[72px] max-h-[72px]",
           className
         )}
       >
@@ -121,18 +122,23 @@ export function AdBanner({ variant = "strip", className, label = "Sponsored" }: 
       )}
       aria-label={label}
     >
-      <p className="mb-0.5 text-[9px] font-bold uppercase tracking-[0.22em] text-muted">{label}</p>
+      <p className="mb-0.5 text-[8px] font-bold uppercase leading-none tracking-[0.22em] text-muted">
+        {label}
+      </p>
       <ins
         key={uid}
         className="adsbygoogle"
-        style={{
-          display: "block",
-          minHeight: variant === "strip" ? 50 : variant === "sidebar" ? 240 : 66,
-        }}
+        style={
+          variant === "strip"
+            ? { display: "block", width: "100%", height: "40px", maxHeight: "40px", overflow: "hidden" }
+            : variant === "sidebar"
+              ? { display: "block", minHeight: 240 }
+              : { display: "block", width: "100%", height: "56px", maxHeight: "56px", overflow: "hidden" }
+        }
         data-ad-client={settings.adsense_publisher_id}
         data-ad-slot={settings.adsense_slot_id}
         data-ad-format="horizontal"
-        data-full-width-responsive="true"
+        data-full-width-responsive="false"
       />
     </div>
   );

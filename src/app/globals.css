@@ -165,7 +165,7 @@ h3,
 }
 
 .ad-strip {
-  min-height: 56px;
+  max-height: 72px;
   background:
     linear-gradient(90deg, rgba(0, 240, 255, 0.1), rgba(178, 75, 255, 0.12), rgba(0, 240, 255, 0.1)),
     rgba(16, 20, 32, 0.95);
