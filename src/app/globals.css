@@ -212,3 +212,11 @@ a {
 .pro-cta-glow {
   animation: pro-cta-pulse 2.4s ease-in-out infinite;
 }
+
+/* Hide Netlify edge badge if CSP does not catch it */
+#netlify-badge,
+[data-netlify-badge],
+iframe[src*="netlify"] {
+  display: none !important;
+  visibility: hidden !important;
+}
