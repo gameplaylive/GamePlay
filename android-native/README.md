@@ -9,7 +9,7 @@ Native shell that hosts the Next.js UI, encodes the phone screen → **YouTube R
 | Chrome / laptop / mobile browser / PWA | **AdSense** (`AdBanner.tsx`) |
 | This Android WebView app | **AdMob** sticky banner under the WebView |
 
-AdSense is **not** loaded inside the WebView (policy). The web app calls `AndroidStreamBridge.setBannerAdsEnabled(true|false)` so Pro users and “ads off” hide the AdMob banner.
+AdSense is **not** loaded inside the WebView (policy). The web app calls `AndroidStreamBridge.setBannerAdsEnabled(true|false)` from ads settings (Creator Pro does not hide AdMob — banners stay outside the player).
 
 ### AdMob setup (before Play Store)
 
@@ -31,7 +31,7 @@ AndroidStreamBridge.stopStream()
 AndroidStreamBridge.muteMic()
 AndroidStreamBridge.unmuteMic()
 AndroidStreamBridge.isNativeApp()
-AndroidStreamBridge.setBannerAdsEnabled(true) // free users; false for Pro
+AndroidStreamBridge.setBannerAdsEnabled(true) // when admob/adsense enabled in settings
 ```
 
 Game packages (auto-launch after MediaProjection consent):

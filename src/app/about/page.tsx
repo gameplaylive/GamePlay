@@ -63,9 +63,9 @@ export default function AboutPage() {
 
       <h2>Advertising</h2>
       <p>
-        Free browsing may show Google AdSense banners on the website and Google AdMob banners in our
-        Android app. These help keep GamePlay Live running. Creator Pro removes our banner
-        placements. Details are in our{" "}
+        GamePlay Live may show Google AdSense banners on the website and Google AdMob banners in our
+        Android app (outside the video player — not inside YouTube/Twitch embeds). These help keep
+        the hub running for everyone, including Creator Pro. Details are in our{" "}
         <Link href="/privacy-policy" className="text-cyan">
           Privacy Policy
         </Link>

@@ -45,11 +45,15 @@ export default function TermsPage() {
       <p>
         Creator Pro is a paid digital subscription billed through Cashfree in India (typically
         ₹99/month or the amount shown at checkout). Benefits may include Go Live Studio (mobile +
-        OBS), stream presets, go-live alerts, homepage featuring opportunities, and removal of our
-        AdSense/AdMob banner placements.
+        OBS / RTMP), 15 Favorite Gamer slots, unlimited Squad Finder posts with top pinning,
+        Discord go-live alerts, Pro chat badge, and homepage featuring opportunities.
       </p>
       <ul>
         <li>Subscriptions renew monthly until canceled in Cashfree / via support</li>
+        <li>
+          Billed monthly at ₹99/mo via Cashfree (UPI AutoPay, Cards &amp; NetBanking). Cancel
+          anytime.
+        </li>
         <li>Platform embeds may still show YouTube/Twitch&apos;s own ads</li>
         <li>Features may evolve; material changes will be communicated in-app when practical</li>
         <li>Refunds are governed by our Refund Policy and Cashfree&apos;s applicable rules</li>
@@ -57,8 +61,9 @@ export default function TermsPage() {
 
       <h2>6. Advertising</h2>
       <p>
-        Free-tier web users may see Google AdSense; Android app users may see Google AdMob. Clicking
-        ads fraudulently or encouraging invalid traffic is prohibited and may result in bans.
+        Web users may see Google AdSense banners and Android app users may see Google AdMob banners
+        outside the video player (including Creator Pro). Clicking ads fraudulently or encouraging
+        invalid traffic is prohibited and may result in bans.
       </p>
 
       <h2>7. Intellectual property</h2>

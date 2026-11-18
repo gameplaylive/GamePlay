@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState, type MouseEvent } from "react";
-import { Gamepad2, Home, Clapperboard, Crown, UserRound, Trophy, Radio } from "lucide-react";
+import { Suspense, useEffect, useState } from "react";
+import { Gamepad2, Home, Clapperboard, Crown, UserRound, Trophy } from "lucide-react";
 import { useApp } from "@/components/providers/AppProviders";
 import { BrandLogo } from "@/components/BrandLogo";
 import { NotificationBell } from "@/components/events/NotificationBell";
@@ -64,22 +64,6 @@ function NavInner() {
   const tab = searchParams.get("tab");
   const { profile, openProModal, signInWithGoogle } = useApp();
   const [hasLiveTournament, setHasLiveTournament] = useState(false);
-  const isPro = profile?.subscription_tier === "pro";
-
-  function goLiveClick(e: MouseEvent) {
-    if (!profile) {
-      e.preventDefault();
-      void signInWithGoogle("/go-live");
-      return;
-    }
-    if (!isPro) {
-      e.preventDefault();
-      openProModal({
-        highlight: "go-live",
-        contextTitle: "Unlock Direct-to-YouTube Creator Studio with Pro",
-      });
-    }
-  }
 
   useEffect(() => {
     let cancelled = false;
@@ -103,38 +87,12 @@ function NavInner() {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-white/5 bg-[#07090f]/80 backdrop-blur-2xl md:hidden">
-        <div className="flex h-12 max-w-[100vw] items-center gap-1.5 overflow-hidden px-2.5">
-          <div className="min-w-0 shrink">
-            <BrandLogo size="xs" withWordmark priority className="!h-7 !w-[6.5rem]" />
+        <div className="flex h-12 w-full max-w-[100vw] items-center gap-1 overflow-hidden px-2">
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <BrandLogo size="xs" withWordmark priority className="!h-7 !max-w-[7rem]" />
           </div>
-          <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1">
             <NotificationBell />
-            <Link
-              href="/go-live"
-              onClick={goLiveClick}
-              className={cn(
-                "inline-flex items-center gap-0.5 rounded-full border px-2 py-1 text-[9px] font-bold uppercase tracking-wide",
-                pathname.startsWith("/go-live")
-                  ? "border-crimson/50 bg-crimson/20 text-white"
-                  : "border-crimson/35 bg-crimson/10 text-white"
-              )}
-            >
-              <Radio size={11} className="text-crimson" />
-              <span className="max-[360px]:hidden">Live</span>
-            </Link>
-            <Link
-              href="/tournaments"
-              className={cn(
-                "inline-flex items-center gap-0.5 rounded-full border px-2 py-1 text-[9px] font-bold uppercase tracking-wide",
-                pathname.startsWith("/tournaments")
-                  ? "border-gold/50 bg-gold/15 text-gold"
-                  : "border-white/10 text-white"
-              )}
-            >
-              <Trophy size={11} />
-              <span className="max-[360px]:hidden">Cups</span>
-              <LiveDot show={hasLiveTournament} />
-            </Link>
             {profile ? (
               <button
                 onClick={() => {
@@ -152,7 +110,7 @@ function NavInner() {
             ) : (
               <button
                 onClick={() => void signInWithGoogle()}
-                className="btn-primary rounded-full px-2.5 py-1 text-[10px]"
+                className="btn-primary rounded-full px-2 py-1 text-[10px]"
               >
                 Sign in
               </button>
@@ -188,18 +146,6 @@ function NavInner() {
           </nav>
           <div className="flex items-center gap-3">
             <NotificationBell />
-            <Link
-              href="/go-live"
-              onClick={goLiveClick}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold",
-                pathname.startsWith("/go-live")
-                  ? "border-crimson/50 bg-crimson/20 text-white"
-                  : "border-crimson/40 bg-crimson/10 text-white hover:bg-crimson/20"
-              )}
-            >
-              <span aria-hidden>🔴</span> Go Live
-            </Link>
             {profile?.role === "admin" && (
               <Link
                 href="/admin/tournaments"

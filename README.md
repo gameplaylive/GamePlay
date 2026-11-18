@@ -1,6 +1,6 @@
 # GamePlay Live
 
-Creator-first gaming hub — browse live streams, go live to YouTube (mobile / OBS), run tournament ops, and unlock **Creator Pro** (₹99/mo via Cashfree) for Go Live Studio, alerts, and ad-free browsing.
+Creator-first gaming hub — browse live streams, go live to YouTube (mobile / OBS), run tournament ops, and unlock **Creator Pro** (₹99/mo via Cashfree) for Go Live Studio, 15 Favorite slots, Squad Finder unlimited posts, and Discord alerts.
 
 ## Stack
 

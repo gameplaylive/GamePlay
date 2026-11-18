@@ -22,7 +22,15 @@ export function StreamCard({ stream }: { stream: CachedStream }) {
   async function onShare(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    const shared = await shareContent(watchUrl, stream.title);
+    const shared = await shareContent({
+      url: watchUrl,
+      title: stream.title,
+      gameTitle: stream.game_title,
+      streamerName: stream.streamer_name,
+      thumbnailUrl: stream.thumbnail_url,
+      isLive,
+      platform: stream.platform,
+    });
     if (!shared) setShareOpen(true);
   }
 
@@ -98,7 +106,17 @@ export function StreamCard({ stream }: { stream: CachedStream }) {
           </div>
         </div>
       </Link>
-      <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} url={watchUrl} title={stream.title} />
+      <ShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        url={watchUrl}
+        title={stream.title}
+        gameTitle={stream.game_title}
+        streamerName={stream.streamer_name}
+        thumbnailUrl={stream.thumbnail_url}
+        isLive={isLive}
+        platform={stream.platform}
+      />
     </>
   );
 }

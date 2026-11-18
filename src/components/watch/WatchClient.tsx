@@ -43,7 +43,7 @@ export function WatchClient({ stream, related }: Props) {
 
   if (!profile) {
     return (
-      <div className="mx-auto max-w-7xl space-y-5 px-4 py-4 md:px-6">
+      <div className="mx-auto max-w-7xl space-y-5 overflow-x-hidden px-4 py-4 md:px-6">
         <WatchLoginGate nextPath={watchPath} title={stream.title} />
         <div>
           <h1 className="font-display text-2xl font-bold leading-tight md:text-3xl">{stream.title}</h1>
@@ -54,12 +54,20 @@ export function WatchClient({ stream, related }: Props) {
   }
 
   async function onShare() {
-    const ok = await shareContent(watchUrl, stream.title);
+    const ok = await shareContent({
+      url: watchUrl,
+      title: stream.title,
+      gameTitle: stream.game_title,
+      streamerName: stream.streamer_name,
+      thumbnailUrl: stream.thumbnail_url,
+      isLive: stream.content_type === "live",
+      platform: stream.platform,
+    });
     if (!ok) setShareOpen(true);
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-4 px-4 py-4 md:space-y-5 md:px-6">
+    <div className="mx-auto max-w-7xl space-y-4 overflow-x-hidden px-4 py-4 md:space-y-5 md:px-6">
       <WatchTelemetry stream={stream} />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         {/* Main column: player first, then ad + meta (never inside the iframe) */}
@@ -117,7 +125,17 @@ export function WatchClient({ stream, related }: Props) {
         </aside>
       </div>
 
-      <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} url={watchUrl} title={stream.title} />
+      <ShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        url={watchUrl}
+        title={stream.title}
+        gameTitle={stream.game_title}
+        streamerName={stream.streamer_name}
+        thumbnailUrl={stream.thumbnail_url}
+        isLive={stream.content_type === "live"}
+        platform={stream.platform}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useApp } from "@/components/providers/AppProviders";
-import { Bell, Crown, Radio, Sparkles, Trophy } from "lucide-react";
+import { Bell, Crown, Radio, Sparkles, Trophy, Users } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
@@ -58,7 +58,8 @@ function ProInner() {
             Go Live Studio & Creator Pro
           </h1>
           <p className="mt-3 text-sm leading-relaxed text-[#D9D2C3]/85">
-            Unlock the creator studio, Go Live alerts, homepage featuring, and ad-free browsing for
+            Unlock Direct-to-YouTube Creator Studio, 15 Favorite Gamer slots, unlimited Squad
+            Finder posts with top pinning, Discord go-live alerts, and a Pro chat badge for
             ₹99/month via Cashfree.
           </p>
           <p className="mt-6 font-display text-5xl font-bold text-[#E8D48A]">
@@ -67,18 +68,27 @@ function ProInner() {
           </p>
           <ul className="mt-6 space-y-3 text-sm text-[#F5F0E6]/90">
             <li className="flex items-center gap-2">
-              <Radio className="text-[#C9A227]" size={16} /> Go Live Studio (mobile + OBS)
+              <Radio className="text-[#C9A227]" size={16} /> Direct-to-YouTube Creator Studio &amp;
+              RTMP
             </li>
             <li className="flex items-center gap-2">
-              <Sparkles className="text-[#2F8F62]" size={16} /> Stream presets & channel utilities
+              <Sparkles className="text-[#2F8F62]" size={16} /> 15 Favorite Gamer slots (vs 5 free)
             </li>
             <li className="flex items-center gap-2">
-              <Bell className="text-[#C9A227]" size={16} /> Discord / Go Live alerts
+              <Bell className="text-[#C9A227]" size={16} /> Discord alerts &amp; Pro chat badge
+            </li>
+            <li className="flex items-center gap-2">
+              <Users className="text-[#C9A227]" size={16} /> Unlimited Squad Finder posts &amp; top
+              pinning
             </li>
             <li className="flex items-center gap-2">
               <Trophy className="text-[#2F8F62]" size={16} /> Homepage community featuring
             </li>
           </ul>
+          <p className="mt-4 text-[11px] leading-relaxed text-[#B8B0A0]">
+            Billed monthly at ₹99/mo via Cashfree (UPI AutoPay, Cards &amp; NetBanking). Cancel
+            anytime.
+          </p>
           {(success || verifyMsg) && (
             <p className="mt-4 text-sm text-[#3FA572]">
               {verifyMsg || "Welcome — confirming your Cashfree subscription…"}

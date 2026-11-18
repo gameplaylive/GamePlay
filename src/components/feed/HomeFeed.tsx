@@ -3,12 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Radio, Users, UserPlus } from "lucide-react";
+import type { MouseEvent } from "react";
 import { StreamCard } from "@/components/feed/StreamCard";
 import { AdBanner } from "@/components/AdBanner";
 import { FavoriteGamerModal } from "@/components/feed/FavoriteGamerModal";
+import { FavoriteGamerSheet } from "@/components/feed/FavoriteGamerSheet";
 import { FeaturedTournamentsStrip } from "@/components/tournaments/FeaturedTournamentsStrip";
 import { EventsPulseBar } from "@/components/events/EventsPulseBar";
 import { CommunityCreatorsRow } from "@/components/feed/CommunityCreatorsRow";
+import { SquadFinder } from "@/components/squads/SquadFinder";
 import { useApp } from "@/components/providers/AppProviders";
 import { MOCK_STREAMS } from "@/lib/mock-data";
 import type { CachedStream, FavoriteGamerStatus, HomeTab } from "@/lib/types";
@@ -21,12 +24,14 @@ export function HomeFeed() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tab = (searchParams.get("tab") as HomeTab) || "live";
-  const { profile, games, favorites, updateProfileLocal, demoMode, signInWithGoogle } = useApp();
+  const { profile, games, favorites, updateProfileLocal, demoMode, signInWithGoogle, openProModal } =
+    useApp();
   const [streams, setStreams] = useState<CachedStream[]>(MOCK_STREAMS);
   const [gameFilter, setGameFilter] = useState<string>("all");
   const [language, setLanguage] = useState(profile?.preferred_language || "All");
   const [editGames, setEditGames] = useState(false);
   const [favModal, setFavModal] = useState(false);
+  const [selectedGamer, setSelectedGamer] = useState<FavoriteGamerStatus | null>(null);
   const [favStatuses, setFavStatuses] = useState<FavoriteGamerStatus[]>([]);
   const [loadingFavs, setLoadingFavs] = useState(false);
 
@@ -43,7 +48,13 @@ export function HomeFeed() {
         const data = await res.json();
         if (cancelled) return;
         if (Array.isArray(data.streams) && data.streams.length) {
-          setStreams(data.streams as CachedStream[]);
+          const remote = data.streams as CachedStream[];
+          // Keep mock rows for games the live sync hasn't filled yet (e.g. BGMI crowded out).
+          const remoteSlugs = new Set(remote.map((s) => s.game_slug));
+          const fillers = MOCK_STREAMS.filter(
+            (m) => m.content_type === "live" && !remoteSlugs.has(m.game_slug)
+          );
+          setStreams(fillers.length ? [...remote, ...fillers] : remote);
         }
       } catch {
         // Keep last good feed (don't overwrite with mock after a successful load)
@@ -119,9 +130,18 @@ export function HomeFeed() {
     // logged-in users see an empty feed while guests saw everything).
     if (gameFilter !== "all") list = list.filter((s) => s.game_slug === gameFilter);
 
-    if (language !== "All") list = list.filter((s) => s.language === language);
+    if (language !== "All") {
+      const langFiltered = list.filter((s) => s.language === language);
+      // Don't wipe a specific game (e.g. BGMI) when language preference mismatches.
+      if (langFiltered.length > 0 || gameFilter === "all") list = langFiltered;
+    }
 
-    if (tab === "trending") list = [...list].sort((a, b) => b.viewer_count - a.viewer_count);
+    if (tab === "trending") {
+      list = [...list].sort((a, b) => b.viewer_count - a.viewer_count);
+    } else if (tab === "live") {
+      // Alternate Twitch / YouTube so one platform doesn't dominate the grid.
+      list = interleaveByPlatform(list);
+    }
     return list;
   }, [streams, tab, gameFilter, language]);
 
@@ -167,52 +187,47 @@ export function HomeFeed() {
       .map((g) => ({ key: g.slug, label: g.title })),
   ];
 
-  function openMyGamers() {
+  function goLiveClick(e: MouseEvent) {
     if (!profile) {
-      void signInWithGoogle("/?tab=favorites");
+      e.preventDefault();
+      void signInWithGoogle("/go-live");
       return;
     }
-    setTab("favorites");
+    if (profile.subscription_tier !== "pro") {
+      e.preventDefault();
+      openProModal({
+        highlight: "go-live",
+        contextTitle: "Unlock Direct-to-YouTube Creator Studio with Pro",
+      });
+    }
   }
 
   const liveSectionTitle = tab === "trending" ? "Trending Gameplay" : "Live Now";
 
   return (
     <div className="mx-auto max-w-7xl space-y-3 overflow-x-hidden px-3 pb-10 pt-3 md:space-y-5 md:px-6 md:pt-5">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
+      <div className="flex max-w-full flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0 flex-1 basis-[12rem]">
           <h1 className="font-display text-[1.35rem] font-bold tracking-tight text-white sm:text-3xl md:text-4xl">
             Tap in. <span className="bg-gradient-to-r from-cyan to-purple bg-clip-text text-transparent">Watch.</span> Share.
           </h1>
         </div>
-        <div className="mt-0.5 flex shrink-0 items-center gap-1.5">
-          <button
-            type="button"
-            onClick={openMyGamers}
-            className={cn(
-              "inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-[10px] font-bold sm:gap-1.5 sm:px-3 sm:text-[11px]",
-              tab === "favorites"
-                ? "border-cyan/50 bg-cyan/20 text-white"
-                : "border-cyan/35 bg-cyan/10 text-cyan"
-            )}
+        <div className="mt-0.5 flex max-w-full shrink-0 flex-wrap items-center justify-end gap-1.5">
+          <Link
+            href="/go-live"
+            onClick={goLiveClick}
+            className="inline-flex h-8 min-w-[5.75rem] items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3 text-[11px] font-bold text-white transition hover:border-crimson/45 hover:bg-crimson/15"
           >
-            <Users size={13} />
-            <span className="hidden sm:inline">My Gamers</span>
-            <span className="sm:hidden">Gamers</span>
-            {liveGamerCount > 0 && (
-              <span className="live-pulse rounded bg-crimson px-1 py-0.5 text-[8px] font-black text-white">
-                {liveGamerCount}
-              </span>
-            )}
-          </button>
+            <Radio size={13} className="text-crimson" />
+            Go Live
+          </Link>
           <button
             type="button"
             onClick={() => setFavModal(true)}
-            className="inline-flex items-center gap-1 rounded-full border border-purple/40 bg-purple/20 px-2.5 py-1.5 text-[10px] font-bold text-white sm:gap-1.5 sm:px-3 sm:text-[11px]"
+            className="inline-flex h-8 min-w-[5.75rem] items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3 text-[11px] font-bold text-white transition hover:border-purple/45 hover:bg-purple/15"
           >
-            <UserPlus size={13} />
-            <span className="hidden sm:inline">Manage Favorites</span>
-            <span className="sm:hidden">Favs</span>
+            <UserPlus size={13} className="text-purple" />
+            Favs
           </button>
         </div>
       </div>
@@ -336,8 +351,8 @@ export function HomeFeed() {
             {!loadingFavs && favorites.length === 0 && (
               <div className="rounded-xl border border-white/5 bg-black/25 px-4 py-8 text-center">
                 <p className="text-sm text-muted">
-                  Save creators with Manage Favorites — then open My Gamers to jump straight to
-                  their live streams.
+                  Save creators with Favs — then tap a gamer to open their live or latest cached
+                  video.
                 </p>
                 <button
                   type="button"
@@ -355,9 +370,11 @@ export function HomeFeed() {
             )}
             <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 lg:gap-4">
               {myGamersLiveFirst.map((f) => (
-                <div
+                <button
                   key={f.id}
-                  className="overflow-hidden rounded-2xl border border-white/5 bg-[#0c101a] shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+                  type="button"
+                  onClick={() => setSelectedGamer(f)}
+                  className="overflow-hidden rounded-2xl border border-white/5 bg-[#0c101a] text-left shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition hover:border-cyan/35"
                 >
                   <div className="relative aspect-[16/10] bg-black/40">
                     <Image
@@ -383,33 +400,20 @@ export function HomeFeed() {
                       <p className="truncate text-[9px] text-white/55">
                         {f.is_live
                           ? `${f.live_title || "Live now"} · ${formatViewers(f.live_viewer_count || 0)}`
-                          : f.latest_video_title || "Offline"}
+                          : f.latest_video_title || "Tap to open"}
                       </p>
-                      {f.is_live && f.live_external_id && (
-                        <Link
-                          href={`/watch/fav-${f.platform}-${encodeURIComponent(f.channel_id_or_username)}?platform=${f.platform}&external=${encodeURIComponent(f.live_external_id)}&type=live&title=${encodeURIComponent(f.live_title || f.channel_name)}&streamer=${encodeURIComponent(f.channel_name)}`}
-                          className="inline-block text-[9px] font-bold text-cyan"
-                          onClick={(e) => {
-                            if (!profile) {
-                              e.preventDefault();
-                              const path = `/watch/fav-${f.platform}-${encodeURIComponent(f.channel_id_or_username)}?platform=${f.platform}&external=${encodeURIComponent(f.live_external_id!)}&type=live&title=${encodeURIComponent(f.live_title || f.channel_name)}&streamer=${encodeURIComponent(f.channel_name)}`;
-                              void signInWithGoogle(path);
-                            }
-                          }}
-                        >
-                          Watch live →
-                        </Link>
-                      )}
+                      <span className="inline-block text-[9px] font-bold text-cyan">Open →</span>
                     </div>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
         </section>
       )}
 
-      {/* Secondary discovery — below primary live / my-gamers */}
+      {/* Squad Finder sits under Live / My Gamers; events & tournaments stay secondary */}
+      <SquadFinder />
       <EventsPulseBar />
       {tab === "live" && <CommunityCreatorsRow />}
       <FeaturedTournamentsStrip />
@@ -424,7 +428,8 @@ export function HomeFeed() {
           <li>Official embeds only — creators keep ownership of their streams.</li>
           <li>India-first filters (games + language) for BGMI, Free Fire, and more.</li>
           <li>
-            Creator Pro unlocks Go Live Studio, alerts, and ad-free browsing for ₹99/mo via Cashfree.
+            Creator Pro unlocks Go Live Studio, 15 Favorite slots, unlimited Squad Finder posts, and
+            Discord alerts for ₹99/mo via Cashfree.
           </li>
         </ul>
       </section>
@@ -479,6 +484,28 @@ export function HomeFeed() {
       )}
 
       <FavoriteGamerModal open={favModal} onClose={() => setFavModal(false)} />
+      <FavoriteGamerSheet gamer={selectedGamer} onClose={() => setSelectedGamer(null)} />
     </div>
   );
+}
+
+/** Twitch, YouTube, Twitch, YouTube… (remainder appended in original order). */
+function interleaveByPlatform(streams: CachedStream[]): CachedStream[] {
+  const twitch: CachedStream[] = [];
+  const youtube: CachedStream[] = [];
+  const other: CachedStream[] = [];
+
+  for (const s of streams) {
+    if (s.platform === "twitch") twitch.push(s);
+    else if (s.platform === "youtube") youtube.push(s);
+    else other.push(s);
+  }
+
+  const out: CachedStream[] = [];
+  const max = Math.max(twitch.length, youtube.length);
+  for (let i = 0; i < max; i++) {
+    if (i < twitch.length) out.push(twitch[i]);
+    if (i < youtube.length) out.push(youtube[i]);
+  }
+  return out.concat(other);
 }

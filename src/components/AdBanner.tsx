@@ -23,11 +23,11 @@ interface AdBannerProps {
 
 /**
  * Web AdSense banner. Never place inside the video player iframe.
- * Stays mounted for free users so impressions don't flash away on hydrate.
- * Admins still see slots while Pro (for placement QA).
+ * Shown for free and Creator Pro — banners sit outside embeds (YT/Twitch may still
+ * show their own in-player ads). Admins / Pro do not suppress platform banners.
  */
 export function AdBanner({ variant = "strip", className, label = "Sponsored" }: AdBannerProps) {
-  const { profile, settings, loading, openProModal } = useApp();
+  const { settings, loading } = useApp();
   const pathname = usePathname();
   const pushed = useRef(false);
   const uid = useId();
@@ -37,15 +37,10 @@ export function AdBanner({ variant = "strip", className, label = "Sponsored" }: 
 
   const blockedPath = isAdBlockedPath(pathname);
   const adsEnabled = settings.adsense_enabled !== false;
-  const isProViewer =
-    !loading &&
-    profile?.subscription_tier === "pro" &&
-    profile?.role !== "admin";
 
   const showRealAd =
     !nativeApp &&
     !blockedPath &&
-    !isProViewer &&
     adsEnabled &&
     Boolean(settings.adsense_publisher_id?.trim() && settings.adsense_slot_id?.trim());
 
@@ -84,8 +79,7 @@ export function AdBanner({ variant = "strip", className, label = "Sponsored" }: 
   // No ads on login / legal / admin / empty utility screens (AdSense + AdMob policy)
   if (blockedPath) return null;
 
-  // Wait until auth/settings settle before hiding — prevents 1–2s flash on refresh
-  if (!loading && (isProViewer || !adsEnabled)) return null;
+  if (!loading && !adsEnabled) return null;
 
   const sizeClass =
     variant === "strip"
@@ -96,11 +90,9 @@ export function AdBanner({ variant = "strip", className, label = "Sponsored" }: 
 
   if (!showRealAd) {
     return (
-      <button
-        type="button"
-        onClick={() => openProModal({ highlight: "ads" })}
+      <div
         className={cn(
-          "ad-strip flex w-full items-center justify-between gap-3 rounded-xl border border-cyan/25 px-3 text-left transition hover:border-cyan/50",
+          "ad-strip flex w-full items-center justify-between gap-3 rounded-xl border border-cyan/25 px-3 text-left",
           variant === "strip"
             ? "min-h-[56px]"
             : variant === "sidebar"
@@ -113,10 +105,10 @@ export function AdBanner({ variant = "strip", className, label = "Sponsored" }: 
           <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-cyan/80">{label}</p>
           <p className="truncate text-xs font-semibold text-white">Advertisement</p>
         </div>
-        <span className="shrink-0 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-[10px] font-bold text-gold">
-          Go Pro
+        <span className="shrink-0 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] font-bold text-muted">
+          Banner
         </span>
-      </button>
+      </div>
     );
   }
 

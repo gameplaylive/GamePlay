@@ -106,8 +106,10 @@ export default function PrivacyPolicyPage() {
         Android Settings → Google → Ads.
       </p>
       <p>
-        <strong>Creator Pro:</strong> Paid subscribers may browse without our AdSense/AdMob banner
-        placements (platform player ads from YouTube/Twitch may still appear inside embeds).
+        <strong>Creator Pro:</strong> Pro unlocks creator tools (Go Live Studio, more Favorite
+        Gamers, Squad Finder unlimited posts, Discord alerts). Our AdSense/AdMob banners may still
+        appear outside the player for all users; YouTube/Twitch may also show their own ads inside
+        embeds.
       </p>
 
       <h2>5. Analytics &amp; infrastructure</h2>

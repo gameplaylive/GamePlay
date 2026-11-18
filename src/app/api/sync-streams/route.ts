@@ -171,53 +171,64 @@ async function syncTwitchLive(
 ) {
   if (!clientId || !clientSecret) return { skipped: true, reason: "no twitch keys" };
 
-  // Single batched request: all top-10 Twitch category ids (COD includes Warzone + CODM extras)
+  // Per-game Helix fetches — a single batched /streams?game_id=…&first=100 is viewer-sorted
+  // across all categories, so big Western titles crowd out BGMI / Free Fire / etc.
   const gameIds = twitchGameIdBatch();
-  const params = gameIds.map((id) => `game_id=${id}`).join("&");
-  const live = await twitchFetch(`/streams?${params}&first=100`, clientId, clientSecret);
-
+  const perGameFirst = 12;
   const now = new Date().toISOString();
   const feedRows: Record<string, unknown>[] = [];
   const streamRows: Record<string, unknown>[] = [];
+  const seen = new Set<string>();
 
-  for (const s of live.data || []) {
-    const game = gameFromTwitchId(String(s.game_id));
-    if (!game) continue;
-    const thumb = String(s.thumbnail_url || "")
-      .replace("{width}", "1280")
-      .replace("{height}", "720");
+  for (const gameId of gameIds) {
+    const live = await twitchFetch(
+      `/streams?game_id=${encodeURIComponent(gameId)}&first=${perGameFirst}`,
+      clientId,
+      clientSecret
+    );
+    for (const s of live.data || []) {
+      const game = gameFromTwitchId(String(s.game_id));
+      if (!game) continue;
+      const key = `twitch:${s.user_login}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
 
-    feedRows.push({
-      platform: "twitch",
-      game_slug: game.slug,
-      game_title: game.title,
-      external_id: s.user_login,
-      title: s.title,
-      streamer_name: s.user_name,
-      channel_id: String(s.user_id || ""),
-      thumbnail_url: thumb,
-      viewer_count: s.viewer_count || 0,
-      published_at: s.started_at || null,
-      language: mapTwitchLanguage(s.language),
-      raw: s,
-      fetched_at: now,
-    });
+      const thumb = String(s.thumbnail_url || "")
+        .replace("{width}", "1280")
+        .replace("{height}", "720");
 
-    streamRows.push({
-      game_id: game.id,
-      game_slug: game.slug,
-      game_title: game.title,
-      content_type: "live",
-      platform: "twitch",
-      external_id: s.user_login,
-      title: s.title,
-      streamer_name: s.user_name,
-      thumbnail_url: thumb,
-      viewer_count: s.viewer_count || 0,
-      published_at: s.started_at || null,
-      language: mapTwitchLanguage(s.language),
-      updated_at: now,
-    });
+      feedRows.push({
+        platform: "twitch",
+        game_slug: game.slug,
+        game_title: game.title,
+        external_id: s.user_login,
+        title: s.title,
+        streamer_name: s.user_name,
+        channel_id: String(s.user_id || ""),
+        thumbnail_url: thumb,
+        viewer_count: s.viewer_count || 0,
+        published_at: s.started_at || null,
+        language: mapTwitchLanguage(s.language),
+        raw: s,
+        fetched_at: now,
+      });
+
+      streamRows.push({
+        game_id: game.id,
+        game_slug: game.slug,
+        game_title: game.title,
+        content_type: "live",
+        platform: "twitch",
+        external_id: s.user_login,
+        title: s.title,
+        streamer_name: s.user_name,
+        thumbnail_url: thumb,
+        viewer_count: s.viewer_count || 0,
+        published_at: s.started_at || null,
+        language: mapTwitchLanguage(s.language),
+        updated_at: now,
+      });
+    }
   }
 
   await supabase

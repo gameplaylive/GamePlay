@@ -14,7 +14,7 @@ import { YOUTUBE_OAUTH_SCOPE } from "@/lib/go-live";
 export interface ProModalOptions {
   /** Always show ₹99 INR pricing (default for all Pro CTAs). */
   inrPrice?: boolean;
-  highlight?: "go-live" | "favorites" | "ads" | "reminders" | "default";
+  highlight?: "go-live" | "favorites" | "ads" | "reminders" | "squads" | "default";
   /** Optional one-line contextual header above the title */
   contextTitle?: string;
 }

@@ -34,8 +34,10 @@ export const DEFAULT_GAMES: DefaultGameDef[] = [
     id: "11111111-1111-1111-1111-111111111103",
     title: "BGMI",
     slug: "bgmi",
-    cover_image: "https://static-cdn.jtvnw.net/ttv-boxart/587342_IGDB-285x380.jpg",
-    twitch_game_id: "587342",
+    cover_image: "https://static-cdn.jtvnw.net/ttv-boxart/505884_IGDB-285x380.jpg",
+    // Twitch category is "PUBG MOBILE" (505884). Legacy 587342 returns 0 lives.
+    twitch_game_id: "505884",
+    twitch_game_ids: ["587342"],
     youtube_query: "BGMI",
     classifyKeywords: [
       "bgmi",
@@ -48,6 +50,11 @@ export const DEFAULT_GAMES: DefaultGameDef[] = [
       "tdm bgmi",
       "bgmi live",
       "pubg m",
+      "bgmi ranked",
+      "bgmi scrims",
+      "bgmi tournament",
+      "bgmi gameplay",
+      "india bgmi",
     ],
   },
   {

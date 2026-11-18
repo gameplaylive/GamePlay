@@ -38,6 +38,8 @@ body {
   background: var(--obsidian);
   color: var(--text);
   min-height: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 body {
@@ -214,10 +216,20 @@ a {
   animation: pro-cta-pulse 2.4s ease-in-out infinite;
 }
 
-/* Hide Netlify edge badge if CSP does not catch it */
+/* Hide Netlify edge / deploy badge aggressively (CSP + CSS) */
 #netlify-badge,
 [data-netlify-badge],
-iframe[src*="netlify"] {
+[class*="netlify-badge"],
+[class*="nf-badge"],
+iframe[src*="netlify"],
+body > a[href*="netlify.com"] {
   display: none !important;
   visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  left: -9999px !important;
 }

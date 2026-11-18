@@ -1,14 +1,14 @@
 "use client";
 
 import {
+  BadgeCheck,
   Bell,
   Crown,
   Radio,
   ShieldCheck,
-  Sparkles,
-  Trophy,
+  UserPlus,
+  Users,
   X,
-  Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useApp, type ProModalOptions } from "@/components/providers/AppProviders";
@@ -32,39 +32,40 @@ interface Props {
   options?: ProModalOptions;
 }
 
+/** Real working Creator Pro benefits — no multi-view grid, XP, or ad-free claims. */
 const BENEFITS = [
   {
     icon: Radio,
-    title: "Go Live Studio (Mobile + OBS)",
-    desc: "Stream BGMI, Free Fire, and more to YouTube from phone or PC OBS with one-tap RTMPS.",
+    title: "Direct-to-YouTube Creator Studio & RTMP",
+    desc: "Stream mobile games with 1-tap Google login, OBS ingest credentials, or Android screen capture.",
     accent: "text-[#C9A227]",
     chip: "bg-[#C9A227]/15",
   },
   {
-    icon: Sparkles,
-    title: "Creator tools & stream presets",
-    desc: "Save title/game/resolution presets and jump back into your last studio layout.",
+    icon: UserPlus,
+    title: "15 Favorite Gamer slots",
+    desc: "Track up to 15 YouTube & Twitch creators (vs 5 on Free) with instant live status.",
     accent: "text-[#2F8F62]",
     chip: "bg-[#2F8F62]/15",
   },
   {
     icon: Bell,
-    title: "Go Live alerts",
-    desc: "Fire Discord webhooks + push-style alerts when your broadcast starts.",
+    title: "Discord alerts & Pro chat badge",
+    desc: "Notify your community via Discord webhooks when you go live, plus a Pro badge in chat and polls.",
     accent: "text-[#C9A227]",
     chip: "bg-[#C9A227]/15",
   },
   {
-    icon: Trophy,
-    title: "Homepage featuring",
-    desc: "Community creators show on the GamePlay Live feed while you're live.",
+    icon: Users,
+    title: "Unlimited Squad Finder posts",
+    desc: "Unlimited Squad Finder posts & priority top pinning so teammates find you first.",
     accent: "text-[#2F8F62]",
     chip: "bg-[#2F8F62]/15",
   },
   {
-    icon: Zap,
-    title: "Ad-free watching",
-    desc: "Browse the hub without AdSense / AdMob banners on free-tier placements.",
+    icon: BadgeCheck,
+    title: "Homepage featuring",
+    desc: "Community creators can surface on the GamePlay Live feed while you’re live.",
     accent: "text-[#C9A227]",
     chip: "bg-[#C9A227]/15",
   },
@@ -74,13 +75,15 @@ function contextualHeader(options?: ProModalOptions) {
   if (options?.contextTitle) return options.contextTitle;
   switch (options?.highlight) {
     case "go-live":
-      return "Unlock Go Live Studio & Creator Pro tools";
+      return "Unlock Direct-to-YouTube Creator Studio with Creator Pro";
     case "favorites":
       return "Unlock 15 Favorite Gamer slots with Creator Pro";
-    case "ads":
-      return "Remove ads with Creator Pro";
     case "reminders":
       return "Unlock event reminders with Creator Pro";
+    case "squads":
+      return "Unlimited Squad Finder posts & priority top pinning";
+    case "ads":
+    case "default":
     default:
       return null;
   }
@@ -206,8 +209,9 @@ export function CreatorProModal({ open, onClose, options }: Props) {
             Go Live Studio & Creator Pro
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-[#D9D2C3]/85">
-            Unlock creator tools, Go Live alerts, and ad-free browsing for{" "}
-            <span className="font-semibold text-[#E8D48A]">₹99/month</span> via Cashfree.
+            Unlock the creator studio, 15 favorite slots, Squad Finder unlimited posts, Discord
+            alerts, and Pro chat badge for{" "}
+            <span className="font-semibold text-[#E8D48A]">₹99/month</span>.
           </p>
 
           <ul className="mt-5 space-y-2.5">
@@ -241,8 +245,9 @@ export function CreatorProModal({ open, onClose, options }: Props) {
               ₹99
               <span className="text-base font-medium text-[#B8B0A0]"> / month</span>
             </p>
-            <p className="mt-1 text-[11px] text-[#B8B0A0]">
-              Recurring Cashfree subscription (UPI / cards / netbanking). Cancel anytime.
+            <p className="mt-1 text-[11px] leading-relaxed text-[#B8B0A0]">
+              Billed monthly at ₹99/mo via Cashfree (UPI AutoPay, Cards &amp; NetBanking). Cancel
+              anytime.
             </p>
 
             {error && <p className="mt-2 text-sm text-[#E07070]">{error}</p>}
@@ -263,7 +268,7 @@ export function CreatorProModal({ open, onClose, options }: Props) {
             <p className="mt-3 flex items-start gap-1.5 text-[10px] leading-relaxed text-[#A89F8F] sm:text-[11px]">
               <ShieldCheck size={13} className="mt-0.5 shrink-0 text-[#2F8F62]" />
               <span className="flex-1 text-left sm:text-center">
-                Secure India payments powered by Cashfree. No Stripe.
+                Secure India payments powered by Cashfree. No Stripe / Google Play Billing.
               </span>
             </p>
           </div>
