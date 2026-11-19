@@ -28,6 +28,8 @@ const CRON_PATHS: Record<string, string[]> = {
     "/api/cron/check-favorite-live?platform=all",
     "/api/cron/process-reminders",
   ],
+  // Hourly: morning/evening/night digests by each device's local timezone
+  "5 * * * *": ["/api/cron/push-digest"],
 };
 
 function appBase(env: CronEnv): string {

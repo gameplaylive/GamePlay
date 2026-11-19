@@ -6,6 +6,7 @@ import { useApp } from "@/components/providers/AppProviders";
 import { AdminAnalyticsPanel } from "@/components/admin/AdminAnalyticsPanel";
 import { AdminAdEarningsPanel } from "@/components/admin/AdminAdEarningsPanel";
 import { AdminTournamentsManager } from "@/components/tournaments/AdminTournamentsManager";
+import { AdminPushPanel } from "@/components/admin/AdminPushPanel";
 import { MOCK_GAMES, MOCK_SETTINGS, MOCK_STREAMS } from "@/lib/mock-data";
 import type { AppSettings, Game, Profile } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -354,35 +355,7 @@ export function AdminDashboard() {
         </div>
       )}
 
-      {tab === "push" && (
-        <div className="glass max-w-xl space-y-3 rounded-2xl p-5">
-          <h2 className="font-display text-lg font-bold">Push Notifications</h2>
-          <p className="text-sm text-muted">
-            Broadcast tools for go-live alerts and tournament reminders. Wiring to FCM / web push is
-            Phase 2 — tournament &quot;Notify Me&quot; currently stores reminders on-device.
-          </p>
-          <label className="block text-sm">
-            Title
-            <input
-              className="mt-1 w-full rounded-xl border border-border-glow bg-obsidian/50 px-3 py-2"
-              placeholder="BGMI Finals starting soon"
-              disabled
-            />
-          </label>
-          <label className="block text-sm">
-            Body
-            <textarea
-              className="mt-1 w-full rounded-xl border border-border-glow bg-obsidian/50 px-3 py-2"
-              rows={3}
-              placeholder="Watch live on GamePlay Live"
-              disabled
-            />
-          </label>
-          <button type="button" disabled className="rounded-xl bg-gold/40 px-5 py-2.5 text-sm font-bold text-obsidian">
-            Send push (coming soon)
-          </button>
-        </div>
-      )}
+      {tab === "push" && <AdminPushPanel />}
 
       {tab === "later" && (
         <div className="space-y-4">

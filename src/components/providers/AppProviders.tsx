@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { OnboardingModal } from "@/components/auth/OnboardingModal";
 import { AdSenseScript } from "@/components/AdSenseScript";
 import { NativeAdMobSync } from "@/components/NativeAdMobSync";
+import { FirebasePushOptIn } from "@/components/FirebasePushOptIn";
 import { YOUTUBE_OAUTH_SCOPE } from "@/lib/go-live";
 
 export interface ProModalOptions {
@@ -288,6 +289,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={value}>
       <AdSenseScript />
       <NativeAdMobSync />
+      <FirebasePushOptIn />
       {children}
       {needsOnboarding && <OnboardingModal />}
     </AppContext.Provider>

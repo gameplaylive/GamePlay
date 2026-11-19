@@ -18,9 +18,9 @@
   "images": {
     "binding": "IMAGES"
   },
-  // Same cadence as former Netlify scheduled functions
+  // Same cadence as former Netlify scheduled functions + hourly push digests
   "triggers": {
-    "crons": ["*/20 * * * *", "*/3 * * * *", "0 */6 * * *", "*/10 * * * *"]
+    "crons": ["*/20 * * * *", "*/3 * * * *", "0 */6 * * *", "*/10 * * * *", "5 * * * *"]
   },
   "observability": {
     "enabled": true
