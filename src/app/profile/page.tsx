@@ -5,13 +5,13 @@ import Link from "next/link";
 import { useApp } from "@/components/providers/AppProviders";
 
 export default function ProfilePage() {
-  const { profile, signOut, signInWithGoogle, favorites, demoMode, openProModal } = useApp();
+  const { profile, signOut, signInWithGoogle, favorites, demoMode } = useApp();
 
   if (!profile) {
     return (
       <div className="mx-auto max-w-md space-y-4 px-4 py-16 text-center">
         <h1 className="font-display text-3xl font-bold">Profile</h1>
-        <p className="mt-2 text-sm text-muted">Sign in with Google to sync favorites and Pro.</p>
+        <p className="mt-2 text-sm text-muted">Sign in with Google to sync favorites and go live.</p>
         <button onClick={() => void signInWithGoogle()} className="btn-primary mt-6 rounded-2xl px-6 py-3 text-sm">
           Continue with Google
         </button>
@@ -34,7 +34,7 @@ export default function ProfilePage() {
           <h1 className="font-display text-2xl font-bold">{profile.full_name || "Player"}</h1>
           <p className="text-sm text-muted">{profile.email}</p>
           <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-bold uppercase">
-            <span className="rounded-full bg-white/10 px-2 py-0.5">{profile.subscription_tier}</span>
+            <span className="rounded-full bg-cyan/15 px-2 py-0.5 text-cyan">Member</span>
             {profile.role === "admin" && <span className="rounded-full bg-gold/20 px-2 py-0.5 text-gold">admin</span>}
             {demoMode && <span className="rounded-full bg-purple/20 px-2 py-0.5 text-purple">demo</span>}
           </div>
@@ -49,14 +49,6 @@ export default function ProfilePage() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {profile.subscription_tier !== "pro" && (
-          <button
-            onClick={() => openProModal({ highlight: "default" })}
-            className="rounded-full bg-gradient-to-r from-[#2F8F62] to-[#C9A227] px-4 py-2 text-sm font-bold text-[#0B100C]"
-          >
-            Subscribe to Pro
-          </button>
-        )}
         {profile.role === "admin" && (
           <Link href="/admin" className="rounded-full border border-gold/40 px-4 py-2 text-sm text-gold">
             Admin

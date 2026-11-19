@@ -1,15 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useApp } from "@/components/providers/AppProviders";
 import { AdminAnalyticsPanel } from "@/components/admin/AdminAnalyticsPanel";
 import { AdminAdEarningsPanel } from "@/components/admin/AdminAdEarningsPanel";
+import { AdminTournamentsManager } from "@/components/tournaments/AdminTournamentsManager";
 import { MOCK_GAMES, MOCK_SETTINGS, MOCK_STREAMS } from "@/lib/mock-data";
 import type { AppSettings, Game, Profile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
-type Tab = "analytics" | "ads" | "overview" | "pricing" | "users" | "games" | "vault";
+type Tab =
+  | "live"
+  | "tournaments"
+  | "squads"
+  | "push"
+  | "later"
+  | "analytics"
+  | "ads"
+  | "overview"
+  | "pricing"
+  | "users"
+  | "games"
+  | "vault";
 
 function mask(value: string) {
   if (!value) return "";
@@ -33,13 +47,15 @@ function StatusBadge({ ok }: { ok: boolean }) {
 export function AdminDashboard() {
   const { profile, loading, demoMode } = useApp();
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("analytics");
+  const [tab, setTab] = useState<Tab>("live");
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [users, setUsers] = useState<Profile[]>([]);
   const [games, setGames] = useState<Game[]>(MOCK_GAMES);
   const [userQuery, setUserQuery] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState("");
+  const [squadPosts, setSquadPosts] = useState<{ id: string; creator_name: string; game: string; mode: string }[]>([]);
+  const [communityLive, setCommunityLive] = useState(0);
   const [kpis, setKpis] = useState({
     users: 0,
     pro: 0,
@@ -66,10 +82,12 @@ export function AdminDashboard() {
 
   async function loadAll() {
     try {
-      const [sRes, uRes, gRes] = await Promise.all([
+      const [sRes, uRes, gRes, squadRes, communityRes] = await Promise.all([
         fetch("/api/admin/settings"),
         fetch("/api/admin/users"),
         fetch("/api/admin/games"),
+        fetch("/api/squads"),
+        fetch("/api/streams/community"),
       ]);
       if (sRes.ok) {
         const data = await sRes.json();
@@ -100,6 +118,14 @@ export function AdminDashboard() {
           setGames(data.games as Game[]);
           setKpis((k) => ({ ...k, games: data.games.filter((g: Game) => g.is_active).length }));
         }
+      }
+      if (squadRes.ok) {
+        const data = await squadRes.json();
+        setSquadPosts(Array.isArray(data.posts) ? data.posts : []);
+      }
+      if (communityRes.ok) {
+        const data = await communityRes.json();
+        setCommunityLive(Array.isArray(data.streams) ? data.streams.length : 0);
       }
     } catch {
       setSettings({
@@ -191,14 +217,22 @@ export function AdminDashboard() {
     return <div className="p-8 text-crimson">Admin access required.</div>;
   }
 
-  const tabs: { id: Tab; label: string }[] = [
+  const primaryTabs: { id: Tab; label: string }[] = [
+    { id: "live", label: "Live Streams" },
+    { id: "tournaments", label: "Tournaments & Cups" },
+    { id: "squads", label: "Squad Finder" },
+    { id: "push", label: "Push Notifications" },
+    { id: "later", label: "Later / Phase 2" },
+  ];
+
+  const phase2Tabs: { id: Tab; label: string }[] = [
     { id: "analytics", label: "Analytics" },
     { id: "ads", label: "Ad Earnings" },
     { id: "overview", label: "Sync" },
-    { id: "pricing", label: "Pricing" },
     { id: "users", label: "Users" },
     { id: "games", label: "Games" },
     { id: "vault", label: "API Vault" },
+    { id: "pricing", label: "Legacy Pricing" },
   ];
 
   return (
@@ -211,22 +245,24 @@ export function AdminDashboard() {
             <p className="mt-1 text-sm text-gold">Demo preview — connect Supabase and set your role to admin for live controls.</p>
           )}
         </div>
-        <a
-          href="/admin/tournaments"
+        <Link
+          href="/tournaments"
           className="rounded-full border border-gold/40 bg-gold/10 px-4 py-2 text-sm font-bold text-gold"
         >
-          Manage Tournaments
-        </a>
+          Public Cups →
+        </Link>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-        {tabs.map((t) => (
+      <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
+        {primaryTabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             className={cn(
-              "shrink-0 rounded-full px-4 py-2 text-sm font-semibold",
-              tab === t.id ? "bg-gold text-obsidian" : "border border-border-glow text-muted"
+              "shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold",
+              tab === t.id || (t.id === "later" && phase2Tabs.some((p) => p.id === tab))
+                ? "bg-gold text-obsidian"
+                : "border border-border-glow text-muted"
             )}
           >
             {t.label}
@@ -235,6 +271,147 @@ export function AdminDashboard() {
       </div>
 
       {message && <p className="rounded-xl border border-border-glow bg-white/5 px-4 py-2 text-sm text-cyan">{message}</p>}
+
+      {tab === "live" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {[
+              ["Feed live", kpis.live],
+              ["Creator linked", communityLive],
+              ["Videos", kpis.videos],
+              ["Users", kpis.users],
+            ].map(([label, value]) => (
+              <div key={label as string} className="glass rounded-2xl p-4">
+                <p className="text-[10px] uppercase tracking-widest text-muted">{label}</p>
+                <p className="mt-2 font-display text-2xl font-bold">{value}</p>
+              </div>
+            ))}
+          </div>
+          <div className="glass space-y-3 rounded-2xl p-5">
+            <h2 className="font-display text-lg font-bold">Live Streams</h2>
+            <p className="text-sm text-muted">
+              Sync YouTube/Twitch discovery feeds. Creator-linked streams appear via Go Live (paste link).
+            </p>
+            <p className="text-xs text-muted">
+              Last sync:{" "}
+              {settings?.last_sync_time ? new Date(settings.last_sync_time).toLocaleString() : "Never"}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => void syncNow()}
+                disabled={syncing}
+                className="btn-primary rounded-xl px-5 py-2.5 text-sm disabled:opacity-50"
+              >
+                {syncing ? "Syncing…" : "Sync Live & Latest Now"}
+              </button>
+              <Link href="/go-live" className="rounded-xl border border-border-glow px-4 py-2.5 text-sm font-semibold">
+                Open Go Live
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === "tournaments" && (
+        <div className="space-y-3">
+          <p className="text-sm text-muted">
+            Create a cup and paste a YouTube/Twitch URL.{" "}
+            <span className="text-white">Watch Live</span> only appears when that channel is actually
+            broadcasting — no sample or offline links.
+          </p>
+          <AdminTournamentsManager embedded />
+        </div>
+      )}
+
+      {tab === "squads" && (
+        <div className="space-y-4">
+          <div className="glass rounded-2xl p-5">
+            <h2 className="font-display text-lg font-bold">Squad Finder</h2>
+            <p className="mt-1 text-sm text-muted">
+              Active open squads right now: <span className="font-bold text-cyan">{squadPosts.length}</span>
+            </p>
+            <Link href="/#squad-finder" className="mt-3 inline-block text-sm font-bold text-cyan">
+              View public Squad Finder →
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {squadPosts.slice(0, 20).map((p) => (
+              <div key={p.id} className="glass flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{p.creator_name}</p>
+                  <p className="text-xs text-muted">
+                    {p.game} · {p.mode}
+                  </p>
+                </div>
+              </div>
+            ))}
+            {squadPosts.length === 0 && (
+              <p className="rounded-xl border border-dashed border-white/10 px-4 py-8 text-center text-sm text-muted">
+                No active squad posts.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === "push" && (
+        <div className="glass max-w-xl space-y-3 rounded-2xl p-5">
+          <h2 className="font-display text-lg font-bold">Push Notifications</h2>
+          <p className="text-sm text-muted">
+            Broadcast tools for go-live alerts and tournament reminders. Wiring to FCM / web push is
+            Phase 2 — tournament &quot;Notify Me&quot; currently stores reminders on-device.
+          </p>
+          <label className="block text-sm">
+            Title
+            <input
+              className="mt-1 w-full rounded-xl border border-border-glow bg-obsidian/50 px-3 py-2"
+              placeholder="BGMI Finals starting soon"
+              disabled
+            />
+          </label>
+          <label className="block text-sm">
+            Body
+            <textarea
+              className="mt-1 w-full rounded-xl border border-border-glow bg-obsidian/50 px-3 py-2"
+              rows={3}
+              placeholder="Watch live on GamePlay Live"
+              disabled
+            />
+          </label>
+          <button type="button" disabled className="rounded-xl bg-gold/40 px-5 py-2.5 text-sm font-bold text-obsidian">
+            Send push (coming soon)
+          </button>
+        </div>
+      )}
+
+      {tab === "later" && (
+        <div className="space-y-4">
+          <p className="text-sm text-muted">
+            Phase 2 / ops tools — sponsors, boosts, vault, and deep analytics live here so the main
+            tabs stay simple.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {phase2Tabs.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                className="rounded-full border border-border-glow px-4 py-2 text-sm font-semibold text-muted hover:text-white"
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-5 text-sm text-muted">
+            <p className="font-semibold text-white/80">Later / Phase 2</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>Sponsor / boost placements on homepage cards</li>
+              <li>Paid pin for Squad Finder (kept off while app is free)</li>
+              <li>Server push for tournament Notify Me</li>
+            </ul>
+          </div>
+        </div>
+      )}
 
       {tab === "analytics" && <AdminAnalyticsPanel />}
 

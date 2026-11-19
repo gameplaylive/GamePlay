@@ -6,49 +6,38 @@ export default function RefundsPage() {
   return (
     <LegalShell title="Refund & Cancellation Policy">
       <p>
-        This policy covers GamePlay Live Creator Pro digital subscriptions processed by Cashfree (₹99/mo).
+        GamePlay Live currently offers creator tools at no charge. There are no active paid
+        subscriptions or in-app purchases to cancel or refund.
       </p>
-      <h2>1. Cancellation</h2>
+      <h2>1. Free access</h2>
       <ul>
         <li>
-          You may cancel auto-renewal at any time from your Cashfree / bank mandate controls or by emailing{" "}
+          Go Live Studio, Favorite Gamers, Squad Finder, and related features are free for signed-in
+          users.
+        </li>
+        <li>
+          If we introduce paid plans in the future, cancellation and refund terms will be published
+          here before any charges apply.
+        </li>
+      </ul>
+      <h2>2. Legacy charges</h2>
+      <ul>
+        <li>
+          If you were previously billed for Creator Pro via Cashfree and need help with a historical
+          charge, email{" "}
           <a className="text-cyan" href="mailto:gameliveapp@gmail.com">
             gameliveapp@gmail.com
-          </a>
-          .
+          </a>{" "}
+          with your Google account email and any payment reference.
         </li>
-        <li>After cancellation, Pro access continues until the end of the current billing period.</li>
-        <li>Canceling stops future charges; it does not automatically refund the current period.</li>
       </ul>
-      <h2>2. Refunds</h2>
-      <ul>
-        <li>
-          Because Pro is a digital service delivered immediately, purchases are generally non-refundable
-          once the billing period has started.
-        </li>
-        <li>
-          We may issue a goodwill refund within 7 days of the first charge if you experienced a verified
-          billing error, duplicate charge, or were unable to access Pro features due to a GamePlay Live-side
-          outage.
-        </li>
-        <li>Refund requests should include the Google account email used on GamePlay Live and the Cashfree payment reference.</li>
-      </ul>
-      <h2>3. Chargebacks</h2>
+      <h2>3. Contact</h2>
       <p>
-        Please contact support before filing a chargeback so we can resolve the issue. Confirmed fraudulent
-        chargebacks may result in account suspension.
-      </p>
-      <h2>4. How to request help</h2>
-      <p>
-        Email{" "}
+        Questions:{" "}
         <a className="text-cyan" href="mailto:gameliveapp@gmail.com">
           gameliveapp@gmail.com
-        </a>{" "}
-        with subject line &quot;Refund Request&quot; or use the{" "}
-        <a className="text-cyan" href="/contact">
-          Contact
-        </a>{" "}
-        page. We aim to respond within 2 business days.
+        </a>
+        .
       </p>
     </LegalShell>
   );

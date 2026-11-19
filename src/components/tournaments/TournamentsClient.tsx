@@ -5,11 +5,6 @@ import { Trophy } from "lucide-react";
 import type { TournamentMatch } from "@/lib/types";
 import { AdBanner } from "@/components/AdBanner";
 import { TournamentCard } from "@/components/tournaments/TournamentCard";
-import {
-  getSampleCustomMatches,
-  getSamplePandascoreMatches,
-  sortTournamentMatches,
-} from "@/lib/tournaments";
 import { cn } from "@/lib/utils";
 
 const GAME_FILTERS = ["All Games", "BGMI", "Free Fire", "Valorant", "CS2", "LoL", "Dota 2"] as const;
@@ -31,17 +26,17 @@ export function TournamentsClient() {
         const res = await fetch("/api/tournaments");
         const data = await res.json();
         if (cancelled) return;
-        if (data.matches?.length) {
-          setMatches(data.matches);
-          setPandaConfigured(Boolean(data.pandascore_configured));
-          setLiveCount(Number(data.live_count || 0));
-          if ((data.live_count || 0) === 0) setStatus("UPCOMING");
-        } else {
-          setMatches(sortTournamentMatches([...getSamplePandascoreMatches(), ...getSampleCustomMatches()]));
-        }
+        const list = (data.matches || []) as TournamentMatch[];
+        setMatches(list);
+        setPandaConfigured(Boolean(data.pandascore_configured));
+        const live = Number(data.live_count || list.filter((m) => m.status === "LIVE").length);
+        setLiveCount(live);
+        setStatus(live > 0 ? "LIVE" : "UPCOMING");
       } catch {
         if (!cancelled) {
-          setMatches(sortTournamentMatches([...getSamplePandascoreMatches(), ...getSampleCustomMatches()]));
+          setMatches([]);
+          setLiveCount(0);
+          setStatus("UPCOMING");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -75,10 +70,9 @@ export function TournamentsClient() {
           </div>
           <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Tournaments</h1>
           <p className="mt-1 text-sm text-muted">
-            Esports centre for GamePlay Live: PC brackets via PandaScore plus curated mobile events
-            (BGMI, Free Fire). Each card links to the official stream when available — we add
-            schedule context, not rebroadcasts.
-            {!pandaConfigured && " · Sample PC matches shown until PANDASCORE_API_KEY is set."}
+            Live cups only when the official stream is actually on air. Upcoming shows scheduled
+            matches — no sample placeholders.
+            {!pandaConfigured && " · Add PANDASCORE_API_KEY for PC esports brackets."}
           </p>
         </div>
       </div>
@@ -95,7 +89,7 @@ export function TournamentsClient() {
               status === tab ? "tab-active" : "text-muted hover:text-white"
             )}
           >
-            {tab === "LIVE" ? "Live Now" : "Upcoming"}
+            {tab === "LIVE" ? `Live Now (${liveCount})` : "Upcoming"}
           </button>
         ))}
       </div>
@@ -125,7 +119,9 @@ export function TournamentsClient() {
 
       {!loading && filtered.length === 0 && (
         <div className="glass rounded-2xl p-10 text-center text-sm text-muted">
-          No {status === "LIVE" ? "live" : "upcoming"} tournaments for this filter.
+          {status === "LIVE"
+            ? "No tournaments are live on an official stream right now. Check Upcoming."
+            : "No upcoming tournaments for this filter yet."}
         </div>
       )}
     </div>

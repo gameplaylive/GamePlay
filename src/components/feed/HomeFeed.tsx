@@ -2,18 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Radio, Users, UserPlus } from "lucide-react";
+import { Plus, Radio, Trophy, Users, UserPlus } from "lucide-react";
 import type { MouseEvent } from "react";
 import { StreamCard } from "@/components/feed/StreamCard";
 import { AdBanner } from "@/components/AdBanner";
 import { FavoriteGamerModal } from "@/components/feed/FavoriteGamerModal";
-import { FavoriteGamerSheet } from "@/components/feed/FavoriteGamerSheet";
 import { FeaturedTournamentsStrip } from "@/components/tournaments/FeaturedTournamentsStrip";
 import { EventsPulseBar } from "@/components/events/EventsPulseBar";
 import { CommunityCreatorsRow } from "@/components/feed/CommunityCreatorsRow";
 import { SquadFinder } from "@/components/squads/SquadFinder";
 import { useApp } from "@/components/providers/AppProviders";
-import { MOCK_STREAMS } from "@/lib/mock-data";
 import type { CachedStream, FavoriteGamerStatus, HomeTab } from "@/lib/types";
 import { LANGUAGES, cn, formatViewers } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -24,20 +22,44 @@ export function HomeFeed() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tab = (searchParams.get("tab") as HomeTab) || "live";
-  const { profile, games, favorites, updateProfileLocal, demoMode, signInWithGoogle, openProModal } =
-    useApp();
-  const [streams, setStreams] = useState<CachedStream[]>(MOCK_STREAMS);
+  const { profile, games, favorites, updateProfileLocal, demoMode, signInWithGoogle } = useApp();
+  const [streams, setStreams] = useState<CachedStream[]>([]);
   const [gameFilter, setGameFilter] = useState<string>("all");
   const [language, setLanguage] = useState(profile?.preferred_language || "All");
   const [editGames, setEditGames] = useState(false);
   const [favModal, setFavModal] = useState(false);
-  const [selectedGamer, setSelectedGamer] = useState<FavoriteGamerStatus | null>(null);
   const [favStatuses, setFavStatuses] = useState<FavoriteGamerStatus[]>([]);
   const [loadingFavs, setLoadingFavs] = useState(false);
+  const [squadCount, setSquadCount] = useState(0);
 
   useEffect(() => {
     if (profile?.preferred_language) setLanguage(profile.preferred_language);
   }, [profile?.preferred_language]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/squads");
+        const data = await res.json();
+        if (!cancelled) setSquadCount(Array.isArray(data.posts) ? data.posts.length : 0);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const focus = searchParams.get("focus");
+    if (focus === "squads" || (typeof window !== "undefined" && window.location.hash === "#squad-finder")) {
+      requestAnimationFrame(() => {
+        document.getElementById("squad-finder")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,14 +69,8 @@ export function HomeFeed() {
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
-        if (Array.isArray(data.streams) && data.streams.length) {
-          const remote = data.streams as CachedStream[];
-          // Keep mock rows for games the live sync hasn't filled yet (e.g. BGMI crowded out).
-          const remoteSlugs = new Set(remote.map((s) => s.game_slug));
-          const fillers = MOCK_STREAMS.filter(
-            (m) => m.content_type === "live" && !remoteSlugs.has(m.game_slug)
-          );
-          setStreams(fillers.length ? [...remote, ...fillers] : remote);
+        if (Array.isArray(data.streams)) {
+          setStreams(data.streams as CachedStream[]);
         }
       } catch {
         // Keep last good feed (don't overwrite with mock after a successful load)
@@ -191,14 +207,6 @@ export function HomeFeed() {
     if (!profile) {
       e.preventDefault();
       void signInWithGoogle("/go-live");
-      return;
-    }
-    if (profile.subscription_tier !== "pro") {
-      e.preventDefault();
-      openProModal({
-        highlight: "go-live",
-        contextTitle: "Unlock Direct-to-YouTube Creator Studio with Pro",
-      });
     }
   }
 
@@ -206,29 +214,49 @@ export function HomeFeed() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-3 overflow-x-hidden px-3 pb-10 pt-3 md:space-y-5 md:px-6 md:pt-5">
-      <div className="flex max-w-full flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0 flex-1 basis-[12rem]">
-          <h1 className="font-display text-[1.35rem] font-bold tracking-tight text-white sm:text-3xl md:text-4xl">
-            Tap in. <span className="bg-gradient-to-r from-cyan to-purple bg-clip-text text-transparent">Watch.</span> Share.
-          </h1>
-        </div>
-        <div className="mt-0.5 flex max-w-full shrink-0 flex-wrap items-center justify-end gap-1.5">
+      <div className="space-y-2">
+        <h1 className="font-display text-[1.35rem] font-bold tracking-tight text-white sm:text-3xl md:text-4xl">
+          Tap in. <span className="bg-gradient-to-r from-cyan to-purple bg-clip-text text-transparent">Watch.</span> Share.
+        </h1>
+        <div className="flex w-full flex-nowrap items-center gap-1 sm:gap-1.5">
           <Link
             href="/go-live"
             onClick={goLiveClick}
-            className="inline-flex h-8 min-w-[5.75rem] items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3 text-[11px] font-bold text-white transition hover:border-crimson/45 hover:bg-crimson/15"
+            className="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-0.5 rounded-full border border-white/15 bg-white/[0.06] px-1 text-[9px] font-bold text-white transition hover:border-crimson/45 hover:bg-crimson/15 sm:gap-1 sm:px-2 sm:text-[11px]"
           >
-            <Radio size={13} className="text-crimson" />
-            Go Live
+            <Radio size={11} className="shrink-0 text-crimson" />
+            <span className="truncate">Go Live</span>
           </Link>
           <button
             type="button"
             onClick={() => setFavModal(true)}
-            className="inline-flex h-8 min-w-[5.75rem] items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3 text-[11px] font-bold text-white transition hover:border-purple/45 hover:bg-purple/15"
+            className="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-0.5 rounded-full border border-white/15 bg-white/[0.06] px-1 text-[9px] font-bold text-white transition hover:border-purple/45 hover:bg-purple/15 sm:gap-1 sm:px-2 sm:text-[11px]"
           >
-            <UserPlus size={13} className="text-purple" />
-            Favs
+            <UserPlus size={11} className="shrink-0 text-purple" />
+            <span className="truncate">Favs</span>
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              document.getElementById("squad-finder")?.scrollIntoView({ behavior: "smooth", block: "start" });
+              if (typeof window !== "undefined") {
+                window.history.replaceState(null, "", "/#squad-finder");
+              }
+            }}
+            className="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-0.5 rounded-full border border-white/15 bg-white/[0.06] px-1 text-[9px] font-bold text-white transition hover:border-cyan/45 hover:bg-cyan/15 sm:gap-1 sm:px-2 sm:text-[11px]"
+          >
+            <Users size={11} className="shrink-0 text-cyan" />
+            <span className="truncate">
+              Squads{squadCount > 0 ? ` (${squadCount})` : ""}
+            </span>
+          </button>
+          <Link
+            href="/tournaments"
+            className="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-0.5 rounded-full border border-white/15 bg-white/[0.06] px-1 text-[9px] font-bold text-white transition hover:border-amber-300/45 hover:bg-amber-400/10 sm:gap-1 sm:px-2 sm:text-[11px]"
+          >
+            <Trophy size={11} className="shrink-0 text-amber-300" />
+            <span className="truncate">Tourneys</span>
+          </Link>
         </div>
       </div>
 
@@ -370,10 +398,9 @@ export function HomeFeed() {
             )}
             <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 lg:gap-4">
               {myGamersLiveFirst.map((f) => (
-                <button
+                <Link
                   key={f.id}
-                  type="button"
-                  onClick={() => setSelectedGamer(f)}
+                  href={`/gamer/${encodeURIComponent(f.id)}`}
                   className="overflow-hidden rounded-2xl border border-white/5 bg-[#0c101a] text-left shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition hover:border-cyan/35"
                 >
                   <div className="relative aspect-[16/10] bg-black/40">
@@ -402,10 +429,10 @@ export function HomeFeed() {
                           ? `${f.live_title || "Live now"} · ${formatViewers(f.live_viewer_count || 0)}`
                           : f.latest_video_title || "Tap to open"}
                       </p>
-                      <span className="inline-block text-[9px] font-bold text-cyan">Open →</span>
+                      <span className="inline-block text-[9px] font-bold text-cyan">Profile →</span>
                     </div>
                   </div>
-                </button>
+                </Link>
               ))}
             </div>
           </div>
@@ -413,7 +440,9 @@ export function HomeFeed() {
       )}
 
       {/* Squad Finder sits under Live / My Gamers; events & tournaments stay secondary */}
-      <SquadFinder />
+      <div id="squad-finder">
+        <SquadFinder />
+      </div>
       <EventsPulseBar />
       {tab === "live" && <CommunityCreatorsRow />}
       <FeaturedTournamentsStrip />
@@ -428,8 +457,8 @@ export function HomeFeed() {
           <li>Official embeds only — creators keep ownership of their streams.</li>
           <li>India-first filters (games + language) for BGMI, Free Fire, and more.</li>
           <li>
-            Creator Pro unlocks Go Live Studio, 15 Favorite slots, unlimited Squad Finder posts, and
-            Discord alerts for ₹99/mo via Cashfree.
+            Free for everyone — Go Live Studio, Favorite Gamers, Squad Finder, and alerts with a
+            Google sign-in.
           </li>
         </ul>
       </section>
@@ -484,7 +513,6 @@ export function HomeFeed() {
       )}
 
       <FavoriteGamerModal open={favModal} onClose={() => setFavModal(false)} />
-      <FavoriteGamerSheet gamer={selectedGamer} onClose={() => setSelectedGamer(null)} />
     </div>
   );
 }

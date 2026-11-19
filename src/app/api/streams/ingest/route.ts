@@ -96,7 +96,7 @@ export async function POST(request: Request) {
     .eq("id", cred.user_id)
     .maybeSingle();
 
-  if (!profile || profile.is_banned || profile.subscription_tier !== "pro") {
+  if (!profile || profile.is_banned) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 

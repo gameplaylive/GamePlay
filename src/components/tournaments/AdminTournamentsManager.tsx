@@ -19,7 +19,13 @@ const emptyForm = {
   channel_id: "",
   fallback_stream_url: "",
   is_featured: true,
+  mark_live_now: false,
 };
+
+interface ManagerProps {
+  /** When true, hide outer page chrome (for embedding in /admin tabs). */
+  embedded?: boolean;
+}
 
 function toLocalInput(iso?: string | null) {
   if (!iso) return "";
@@ -33,7 +39,7 @@ function fromLocalInput(value: string) {
   return new Date(value).toISOString();
 }
 
-export function AdminTournamentsManager() {
+export function AdminTournamentsManager({ embedded = false }: ManagerProps) {
   const { profile, loading, demoMode } = useApp();
   const router = useRouter();
   const [allowed, setAllowed] = useState(false);
@@ -89,13 +95,32 @@ export function AdminTournamentsManager() {
     e.preventDefault();
     setBusy(true);
     setMessage("");
+
+    let start = form.start_time ? fromLocalInput(form.start_time) : "";
+    let end = form.end_time ? fromLocalInput(form.end_time) : null;
+    if (form.mark_live_now) {
+      const now = Date.now();
+      start = new Date(now - 5 * 60000).toISOString();
+      end = new Date(now + 4 * 3600000).toISOString();
+    }
+    if (!start) {
+      setBusy(false);
+      setMessage("Start time is required (or toggle Mark Live Now).");
+      return;
+    }
+    if (!form.fallback_stream_url.trim() && form.mark_live_now) {
+      setBusy(false);
+      setMessage("Add a YouTube/Twitch stream URL to go live.");
+      return;
+    }
+
     const payload = {
       ...(editingId ? { id: editingId } : {}),
       tournament_name: form.tournament_name,
       game: form.game,
       match_title: form.match_title,
-      start_time: fromLocalInput(form.start_time),
-      end_time: form.end_time ? fromLocalInput(form.end_time) : null,
+      start_time: start,
+      end_time: end,
       platform: form.platform,
       channel_id: form.channel_id,
       fallback_stream_url: form.fallback_stream_url,
@@ -131,7 +156,32 @@ export function AdminTournamentsManager() {
       channel_id: t.channel_id || "",
       fallback_stream_url: t.fallback_stream_url || "",
       is_featured: t.is_featured,
+      mark_live_now: false,
     });
+  }
+
+  async function goLiveNow(t: CustomTournament) {
+    setBusy(true);
+    setMessage("");
+    const now = Date.now();
+    const res = await fetch("/api/admin/tournaments", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: t.id,
+        start_time: new Date(now - 5 * 60000).toISOString(),
+        end_time: new Date(now + 4 * 3600000).toISOString(),
+        is_featured: true,
+      }),
+    });
+    const data = await res.json();
+    setBusy(false);
+    if (!res.ok) {
+      setMessage(data.error || "Could not mark live");
+      return;
+    }
+    setMessage("Tournament marked LIVE");
+    await load();
   }
 
   async function remove(id: string) {
@@ -185,21 +235,23 @@ export function AdminTournamentsManager() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5 px-4 py-6 md:px-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold">Admin</p>
-          <h1 className="font-display text-3xl font-bold">Tournaments Manager</h1>
+    <div className={cn("space-y-5", !embedded && "mx-auto max-w-5xl px-4 py-6 md:px-6")}>
+      {!embedded && (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold">Admin</p>
+            <h1 className="font-display text-3xl font-bold">Tournaments Manager</h1>
+          </div>
+          <div className="flex gap-2">
+            <Link href="/tournaments" className="rounded-full border border-border-glow px-4 py-2 text-sm">
+              Public view
+            </Link>
+            <Link href="/admin" className="rounded-full border border-gold/40 px-4 py-2 text-sm text-gold">
+              Command Center
+            </Link>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Link href="/tournaments" className="rounded-full border border-border-glow px-4 py-2 text-sm">
-            Public view
-          </Link>
-          <Link href="/admin" className="rounded-full border border-gold/40 px-4 py-2 text-sm text-gold">
-            Command Center
-          </Link>
-        </div>
-      </div>
+      )}
 
       {message && (
         <p className="rounded-xl border border-border-glow bg-white/5 px-4 py-2 text-sm text-cyan">{message}</p>
@@ -207,7 +259,7 @@ export function AdminTournamentsManager() {
 
       <form onSubmit={save} className="glass grid gap-3 rounded-2xl p-5 md:grid-cols-2">
         <h2 className="md:col-span-2 font-display text-lg font-bold">
-          {editingId ? "Edit tournament" : "Add mobile tournament"}
+          {editingId ? "Edit tournament" : "Create tournament"}
         </h2>
         <label className="text-sm md:col-span-2">
           Tournament name
@@ -282,13 +334,21 @@ export function AdminTournamentsManager() {
           />
         </label>
         <label className="text-sm md:col-span-2">
-          Fallback stream URL
+          Stream URL (YouTube / Twitch)
           <input
             value={form.fallback_stream_url}
             onChange={(e) => setForm({ ...form, fallback_stream_url: e.target.value })}
             className="mt-1 w-full rounded-xl border border-border-glow bg-obsidian/50 px-3 py-2"
-            placeholder="https://youtube.com/watch?v=..."
+            placeholder="https://youtube.com/watch?v=... or https://twitch.tv/channel"
           />
+        </label>
+        <label className="flex items-center gap-2 text-sm md:col-span-2">
+          <input
+            type="checkbox"
+            checked={form.mark_live_now}
+            onChange={(e) => setForm({ ...form, mark_live_now: e.target.checked })}
+          />
+          Prefer live window (still requires the YouTube/Twitch channel to be actually live)
         </label>
         <label className="flex items-center gap-2 text-sm md:col-span-2">
           <input
@@ -336,7 +396,15 @@ export function AdminTournamentsManager() {
                 {t.platform} · channel: {t.channel_id || "—"}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void goLiveNow(t)}
+                className="rounded-full border border-crimson/40 px-3 py-1.5 text-xs font-bold text-crimson"
+              >
+                Go Live
+              </button>
               <button
                 onClick={() => startEdit(t)}
                 className="rounded-full border border-cyan/40 px-3 py-1.5 text-xs font-bold text-cyan"
@@ -345,7 +413,7 @@ export function AdminTournamentsManager() {
               </button>
               <button
                 onClick={() => void remove(t.id)}
-                className="rounded-full border border-crimson/40 px-3 py-1.5 text-xs font-bold text-crimson"
+                className="rounded-full border border-white/20 px-3 py-1.5 text-xs font-bold text-muted"
               >
                 Delete
               </button>

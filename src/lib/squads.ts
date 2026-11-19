@@ -21,7 +21,8 @@ export const SQUAD_MODES = [
   "Custom Room",
 ] as const;
 
-export const FREE_SQUAD_POSTS_PER_DAY = 1;
+/** Paywall removed — kept for API shape compatibility; no longer enforced. */
+export const FREE_SQUAD_POSTS_PER_DAY = 999;
 export const SQUAD_NOTE_MAX = 120;
 export const SQUAD_ID_MAX = 48;
 
@@ -104,4 +105,4 @@ export function formatExpiresIn(expiresAt: string, nowMs = Date.now()): string {
 }
 
 export const FREE_LIMIT_MESSAGE =
-  "Free plan allows 1 Squad Post per day. Upgrade to Creator Pro (₹99/mo) for unlimited posts & top pinning.";
+  "Could not create squad post. Please try again.";

@@ -5,14 +5,8 @@ import Link from "next/link";
 import { ArrowRight, Trophy } from "lucide-react";
 import type { TournamentMatch } from "@/lib/types";
 import { TournamentCard } from "@/components/tournaments/TournamentCard";
-import {
-  getSampleCustomMatches,
-  getSamplePandascoreMatches,
-  sortTournamentMatches,
-} from "@/lib/tournaments";
 
 export function FeaturedTournamentsStrip() {
-  // Empty on SSR so server/client first paint match (sample Date.now() times break hydration).
   const [matches, setMatches] = useState<TournamentMatch[]>([]);
 
   useEffect(() => {
@@ -22,28 +16,12 @@ export function FeaturedTournamentsStrip() {
         const res = await fetch("/api/tournaments");
         const data = await res.json();
         if (cancelled) return;
-        if (data.matches?.length) {
-          const featured = (data.matches as TournamentMatch[])
-            .filter((m) => m.status === "LIVE" || m.status === "UPCOMING")
-            .slice(0, 3);
-          setMatches(featured);
-        } else {
-          setMatches(
-            sortTournamentMatches([...getSamplePandascoreMatches(), ...getSampleCustomMatches()]).slice(
-              0,
-              3
-            )
-          );
-        }
+        const featured = ((data.matches || []) as TournamentMatch[])
+          .filter((m) => m.status === "LIVE" || m.status === "UPCOMING")
+          .slice(0, 8);
+        setMatches(featured);
       } catch {
-        if (!cancelled) {
-          setMatches(
-            sortTournamentMatches([...getSamplePandascoreMatches(), ...getSampleCustomMatches()]).slice(
-              0,
-              3
-            )
-          );
-        }
+        if (!cancelled) setMatches([]);
       }
     })();
     return () => {

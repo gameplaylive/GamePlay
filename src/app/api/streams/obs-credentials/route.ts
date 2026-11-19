@@ -48,10 +48,6 @@ export async function GET() {
   if (!profile || profile.is_banned) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  if (profile.subscription_tier !== "pro") {
-    return NextResponse.json({ error: "Pro subscription required", code: "PRO_REQUIRED" }, { status: 402 });
-  }
-
   const service = createServiceClient() || supabase;
   let { data: cred } = await service
     .from("creator_ingest_credentials")
@@ -112,10 +108,6 @@ export async function POST(request: Request) {
   if (!profile || profile.is_banned) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  if (profile.subscription_tier !== "pro") {
-    return NextResponse.json({ error: "Pro subscription required", code: "PRO_REQUIRED" }, { status: 402 });
-  }
-
   const service = createServiceClient() || supabase;
   let { data: cred } = await service
     .from("creator_ingest_credentials")

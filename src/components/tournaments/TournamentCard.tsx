@@ -19,6 +19,7 @@ export function TournamentCard({ match, compact = false }: Props) {
   const [notified, setNotified] = useState(false);
   const watchPath = buildWatchPath(match);
   const isLive = match.status === "LIVE";
+  const isUpcoming = match.status === "UPCOMING";
 
   useEffect(() => {
     try {
@@ -103,7 +104,11 @@ export function TournamentCard({ match, compact = false }: Props) {
             >
               <Play size={13} fill="currentColor" /> Watch Live
             </Link>
-          ) : (
+          ) : isLive ? (
+            <span className="inline-flex flex-1 items-center justify-center rounded-xl border border-white/10 px-3 py-2 text-xs font-bold text-muted">
+              Stream link pending
+            </span>
+          ) : isUpcoming ? (
             <button
               type="button"
               onClick={toggleNotify}
@@ -116,7 +121,7 @@ export function TournamentCard({ match, compact = false }: Props) {
             >
               <Bell size={13} /> {notified ? "Reminder On" : "Notify Me"}
             </button>
-          )}
+          ) : null}
         </div>
       </div>
     </article>

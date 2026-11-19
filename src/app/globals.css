@@ -165,11 +165,27 @@ h3,
 }
 
 .ad-strip {
-  max-height: 72px;
+  height: 44px !important;
+  max-height: 44px !important;
+  min-height: 44px !important;
+  overflow: hidden !important;
   background:
     linear-gradient(90deg, rgba(0, 240, 255, 0.1), rgba(178, 75, 255, 0.12), rgba(0, 240, 255, 0.1)),
     rgba(16, 20, 32, 0.95);
   box-shadow: inset 0 0 0 1px rgba(0, 240, 255, 0.08);
+}
+
+.ad-strip iframe,
+.ad-strip ins.adsbygoogle,
+.ad-strip .ad-strip-slot {
+  max-height: 32px !important;
+  overflow: hidden !important;
+}
+
+.ad-strip-tall {
+  background:
+    linear-gradient(90deg, rgba(0, 240, 255, 0.1), rgba(178, 75, 255, 0.12), rgba(0, 240, 255, 0.1)),
+    rgba(16, 20, 32, 0.95);
 }
 
 input,
@@ -214,22 +230,4 @@ a {
 
 .pro-cta-glow {
   animation: pro-cta-pulse 2.4s ease-in-out infinite;
-}
-
-/* Hide Netlify edge / deploy badge aggressively (CSP + CSS) */
-#netlify-badge,
-[data-netlify-badge],
-[class*="netlify-badge"],
-[class*="nf-badge"],
-iframe[src*="netlify"],
-body > a[href*="netlify.com"] {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  width: 0 !important;
-  height: 0 !important;
-  overflow: hidden !important;
-  position: absolute !important;
-  left: -9999px !important;
 }

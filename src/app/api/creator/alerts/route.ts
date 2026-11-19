@@ -18,10 +18,6 @@ export async function POST(request: Request) {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (profile?.subscription_tier !== "pro") {
-    return NextResponse.json({ error: "Creator Pro required for Go Live alerts" }, { status: 403 });
-  }
-
   const body = (await request.json().catch(() => ({}))) as {
     title?: string;
     game?: string;
@@ -34,7 +30,7 @@ export async function POST(request: Request) {
   const videoId = body.videoId ? String(body.videoId) : "";
   const watch = videoId ? `https://www.youtube.com/watch?v=${videoId}` : "";
   const content = [
-    `🔴 **${profile.full_name || profile.email || "Creator"} is LIVE**`,
+    `🔴 **${profile?.full_name || profile?.email || "Creator"} is LIVE**`,
     `${game} · ${title}`,
     watch || "Watch on GamePlay Live",
   ].join("\n");

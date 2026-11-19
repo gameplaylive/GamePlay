@@ -111,6 +111,13 @@ export interface CreatorSearchResult {
   is_live?: boolean;
 }
 
+export interface CreatorRecentVideo {
+  id: string;
+  title: string;
+  thumbnail: string;
+  published_at?: string;
+}
+
 export interface FavoriteGamerStatus extends UserFavorite {
   is_live: boolean;
   live_title?: string;
@@ -120,6 +127,9 @@ export interface FavoriteGamerStatus extends UserFavorite {
   latest_video_id?: string;
   latest_video_title?: string;
   latest_video_thumbnail?: string;
+  /** Cached recent uploads / VODs (from favorites cron, ~10–20 min). */
+  recent_videos?: CreatorRecentVideo[];
+  last_checked_at?: string | null;
 }
 
 export type HomeTab = "live" | "trending" | "favorites";
@@ -221,7 +231,7 @@ export type CommunityGame =
 
 export type StreamResolution = "720p60" | "1080p30";
 
-export type CommunityStreamSource = "mobile" | "pc" | "youtube";
+export type CommunityStreamSource = "mobile" | "pc" | "youtube" | "twitch";
 
 export interface CommunityLiveStream {
   id: string;
@@ -236,6 +246,7 @@ export interface CommunityLiveStream {
   resolution?: StreamResolution | string;
   mic_enabled?: boolean;
   source?: CommunityStreamSource;
+  /** HLS URL for legacy PC ingest, or Twitch channel slug when source === "twitch". */
   playback_url?: string | null;
   ingest_stream_key?: string | null;
 }

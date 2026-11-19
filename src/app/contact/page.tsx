@@ -23,8 +23,8 @@ export default function ContactPage() {
   return (
     <LegalShell title="Contact Us">
       <p>
-        Need help with Creator Pro (Cashfree), Google sign-in, AdSense / AdMob verification, or
-        general support? Email us directly or use the form below.
+        Need help with Google sign-in, Go Live Studio, AdSense / AdMob verification, or general
+        support? Email us directly or use the form below.
       </p>
       <p className="rounded-xl border border-cyan/20 bg-cyan/5 px-4 py-3 text-sm">
         Official support:{" "}

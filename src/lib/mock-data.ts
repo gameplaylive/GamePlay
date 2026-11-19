@@ -11,6 +11,9 @@ export const MOCK_GAMES: Game[] = DEFAULT_GAMES.map((g) => ({
   is_active: true,
 }));
 
+/** Fixed timestamps — never Date.now() at module load (breaks SSR/client hydration). */
+const MOCK_UPDATED = "2026-11-18T12:00:00.000Z";
+
 export const MOCK_STREAMS: CachedStream[] = [
   {
     id: "22222222-2222-2222-2222-222222222201",
@@ -25,9 +28,9 @@ export const MOCK_STREAMS: CachedStream[] = [
     thumbnail_url:
       "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1280&h=720&q=80",
     viewer_count: 18420,
-    published_at: new Date(Date.now() - 12 * 60000).toISOString(),
+    published_at: "2026-11-18T11:48:00.000Z",
     language: "English",
-    updated_at: new Date().toISOString(),
+    updated_at: MOCK_UPDATED,
   },
   {
     id: "22222222-2222-2222-2222-222222222202",
@@ -41,9 +44,9 @@ export const MOCK_STREAMS: CachedStream[] = [
     streamer_name: "CityChaosTV",
     thumbnail_url: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
     viewer_count: 9320,
-    published_at: new Date(Date.now() - 25 * 60000).toISOString(),
+    published_at: "2026-11-18T11:35:00.000Z",
     language: "English",
-    updated_at: new Date().toISOString(),
+    updated_at: MOCK_UPDATED,
   },
   {
     id: "22222222-2222-2222-2222-222222222203",
@@ -58,9 +61,9 @@ export const MOCK_STREAMS: CachedStream[] = [
     thumbnail_url:
       "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1280&h=720&q=80",
     viewer_count: 22100,
-    published_at: new Date(Date.now() - 8 * 60000).toISOString(),
+    published_at: "2026-11-18T11:52:00.000Z",
     language: "Hindi",
-    updated_at: new Date().toISOString(),
+    updated_at: MOCK_UPDATED,
   },
   {
     id: "22222222-2222-2222-2222-222222222204",
@@ -75,9 +78,9 @@ export const MOCK_STREAMS: CachedStream[] = [
     thumbnail_url:
       "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?auto=format&fit=crop&w=1280&h=720&q=80",
     viewer_count: 41000,
-    published_at: new Date(Date.now() - 4 * 60000).toISOString(),
+    published_at: "2026-11-18T11:56:00.000Z",
     language: "English",
-    updated_at: new Date().toISOString(),
+    updated_at: MOCK_UPDATED,
   },
   {
     id: "22222222-2222-2222-2222-222222222205",
@@ -91,9 +94,9 @@ export const MOCK_STREAMS: CachedStream[] = [
     streamer_name: "CraftLegacy",
     thumbnail_url: "https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg",
     viewer_count: 120000,
-    published_at: new Date(Date.now() - 2 * 3600000).toISOString(),
+    published_at: "2026-11-18T10:00:00.000Z",
     language: "English",
-    updated_at: new Date().toISOString(),
+    updated_at: MOCK_UPDATED,
   },
   {
     id: "22222222-2222-2222-2222-222222222206",
@@ -107,9 +110,9 @@ export const MOCK_STREAMS: CachedStream[] = [
     streamer_name: "BlocKids",
     thumbnail_url: "https://i.ytimg.com/vi/aqz-KE-bpKQ/hqdefault.jpg",
     viewer_count: 5400,
-    published_at: new Date(Date.now() - 18 * 60000).toISOString(),
+    published_at: "2026-11-18T11:42:00.000Z",
     language: "English",
-    updated_at: new Date().toISOString(),
+    updated_at: MOCK_UPDATED,
   },
 ];
 
@@ -118,7 +121,7 @@ export const MOCK_SETTINGS: AppSettingsPublic = {
   pro_price_usd: 99,
   pro_plan_name: "GamePlay Live Pro",
   pro_plan_description:
-    "Creator Pro: Go Live Studio, 15 Favorite slots, Squad Finder unlimited, Discord alerts",
+    "Free for all creators: Go Live Studio, Favorite slots, Squad Finder, Discord alerts",
   adsense_enabled: true,
   adsense_publisher_id: "ca-pub-5165582915599822",
   adsense_slot_id: "",

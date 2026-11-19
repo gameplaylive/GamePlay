@@ -37,37 +37,10 @@ export async function GET(request: Request) {
 
   const posts = (data || []) as SquadPost[];
 
-  // Optional quota hint for signed-in users (UI freemium banner)
-  let is_pro = false;
-  let free_posts_today = 0;
-  const userClient = await createClient();
-  if (userClient) {
-    const {
-      data: { user },
-    } = await userClient.auth.getUser();
-    if (user) {
-      const { data: profile } = await userClient
-        .from("profiles")
-        .select("subscription_tier")
-        .eq("id", user.id)
-        .maybeSingle();
-      is_pro = profile?.subscription_tier === "pro";
-      if (!is_pro) {
-        const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        const { count } = await supabase
-          .from("squad_posts")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .gte("created_at", since);
-        free_posts_today = count || 0;
-      }
-    }
-  }
-
   return NextResponse.json({
     posts,
-    is_pro,
-    free_posts_today,
+    is_pro: true,
+    free_posts_today: 0,
     free_limit: FREE_SQUAD_POSTS_PER_DAY,
   });
 }
@@ -103,22 +76,6 @@ export async function POST(request: Request) {
     .eq("id", user.id)
     .maybeSingle();
 
-  const isPro = profile?.subscription_tier === "pro";
-
-  if (!isPro) {
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const service = createServiceClient() || supabase;
-    const { count } = await service
-      .from("squad_posts")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .gte("created_at", since);
-
-    if ((count || 0) >= FREE_SQUAD_POSTS_PER_DAY) {
-      return NextResponse.json({ error: FREE_LIMIT_MESSAGE, code: "FREE_LIMIT" }, { status: 429 });
-    }
-  }
-
   const creatorName =
     (profile?.full_name || "").trim() ||
     (user.user_metadata?.full_name as string | undefined)?.trim() ||
@@ -131,7 +88,7 @@ export async function POST(request: Request) {
     .insert({
       user_id: user.id,
       creator_name: creatorName.slice(0, 48),
-      is_pro: isPro,
+      is_pro: false,
       game: validated.data.game,
       mode: validated.data.mode,
       mic_required: validated.data.mic_required,

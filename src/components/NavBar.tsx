@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { Gamepad2, Home, Clapperboard, Crown, UserRound, Trophy } from "lucide-react";
+import { Gamepad2, Home, Clapperboard, Users, UserRound, Trophy } from "lucide-react";
 import { useApp } from "@/components/providers/AppProviders";
 import { BrandLogo } from "@/components/BrandLogo";
 import { NotificationBell } from "@/components/events/NotificationBell";
@@ -35,10 +35,10 @@ const items = [
     match: (p: string) => p.startsWith("/games"),
   },
   {
-    href: "/pro",
-    label: "Pro",
-    icon: Crown,
-    match: (p: string) => p.startsWith("/pro"),
+    href: "/#squad-finder",
+    label: "Squads",
+    icon: Users,
+    match: (p: string) => p === "/" /* highlight only via hash handled loosely */,
   },
   {
     href: "/profile",
@@ -62,7 +62,7 @@ function NavInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab");
-  const { profile, openProModal, signInWithGoogle } = useApp();
+  const { profile, signInWithGoogle } = useApp();
   const [hasLiveTournament, setHasLiveTournament] = useState(false);
 
   useEffect(() => {
@@ -81,7 +81,7 @@ function NavInner() {
     };
   }, []);
 
-  // Mobile dock keeps 5 slots — swap Games for Tournaments prominence on mobile
+  // Mobile dock keeps 5 slots — drop Games so Live / Latest / Cups / Squads / Profile fit
   const mobileItems = items.filter((i) => i.label !== "Games");
 
   return (
@@ -94,19 +94,12 @@ function NavInner() {
           <div className="flex shrink-0 items-center gap-1">
             <NotificationBell />
             {profile ? (
-              <button
-                onClick={() => {
-                  if (profile.subscription_tier !== "pro") openProModal({ highlight: "default" });
-                }}
-                className={cn(
-                  "rounded-full px-2 py-1 text-[10px] font-bold",
-                  profile.subscription_tier === "pro"
-                    ? "border border-gold/50 text-gold"
-                    : "bg-gradient-to-r from-[#2F8F62] to-[#C9A227] text-[#0B100C]"
-                )}
+              <Link
+                href="/profile"
+                className="rounded-full border border-white/15 px-2 py-1 text-[10px] font-bold text-white/90"
               >
-                {profile.subscription_tier === "pro" ? "PRO" : "Pro"}
-              </button>
+                Profile
+              </Link>
             ) : (
               <button
                 onClick={() => void signInWithGoogle()}
@@ -124,7 +117,10 @@ function NavInner() {
           <BrandLogo size="sm" withWordmark priority />
           <nav className="flex items-center gap-1 rounded-full border border-white/5 bg-white/[0.03] p-1">
             {items.map((item) => {
-              const active = item.match(pathname, tab);
+              const active =
+                item.label === "Squads"
+                  ? false
+                  : item.match(pathname, tab);
               const Icon = item.icon;
               const isTournaments = item.label === "Tournaments";
               return (
@@ -163,19 +159,12 @@ function NavInner() {
               </Link>
             )}
             {profile ? (
-              <button
-                onClick={() => {
-                  if (profile.subscription_tier !== "pro") openProModal({ highlight: "default" });
-                }}
-                className={cn(
-                  "rounded-full px-4 py-2 text-sm font-bold",
-                  profile.subscription_tier === "pro"
-                    ? "border border-gold/50 text-gold"
-                    : "bg-gradient-to-r from-[#2F8F62] to-[#C9A227] text-[#0B100C] shadow-[0_8px_24px_rgba(201,162,39,0.25)]"
-                )}
+              <Link
+                href="/profile"
+                className="rounded-full border border-white/15 px-4 py-2 text-sm font-bold text-white/90 hover:border-cyan/40"
               >
-                {profile.subscription_tier === "pro" ? "PRO" : "Subscribe to Pro"}
-              </button>
+                {profile.full_name?.split(" ")[0] || "Profile"}
+              </Link>
             ) : (
               <button
                 onClick={() => void signInWithGoogle()}
@@ -191,26 +180,27 @@ function NavInner() {
       <nav className="mobile-dock fixed inset-x-3 bottom-3 z-40 rounded-2xl border border-white/10 bg-[#0b0f18]/92 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl md:hidden">
         <div className="mx-auto flex h-[58px] max-w-lg items-center justify-around">
           {mobileItems.map((item) => {
-            const active = item.match(pathname, tab);
+            const active =
+              item.label === "Squads" ? false : item.match(pathname, tab);
             const Icon = item.icon;
             const isTournaments = item.label === "Tournaments";
-            const label = isTournaments ? "Cups" : item.label;
+            const label =
+              isTournaments ? "Cups" : item.label === "Squads" ? "Squads" : item.label;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative flex min-w-[48px] flex-col items-center gap-0.5 rounded-xl px-1.5 py-1 text-[9px] font-bold uppercase tracking-wide transition",
+                  "flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-1 text-[9px] font-bold uppercase tracking-wide",
                   active ? "text-cyan" : "text-muted"
                 )}
               >
-                {active && (
-                  <span className="absolute -top-0.5 h-1 w-4 rounded-full bg-cyan shadow-[0_0_12px_#00f0ff]" />
-                )}
                 <span className="relative">
-                  <Icon size={18} strokeWidth={active ? 2.5 : 1.8} />
-                  {isTournaments && hasLiveTournament && (
-                    <span className="absolute -right-1 -top-0.5 h-1.5 w-1.5 rounded-full bg-crimson" />
+                  <Icon size={18} />
+                  {isTournaments && (
+                    <span className="absolute -right-1 -top-0.5">
+                      <LiveDot show={hasLiveTournament} />
+                    </span>
                   )}
                 </span>
                 {label}
@@ -225,7 +215,7 @@ function NavInner() {
 
 export function NavBar() {
   return (
-    <Suspense fallback={<div className="h-14 md:h-[68px]" />}>
+    <Suspense fallback={<div className="h-12 md:h-[68px]" />}>
       <NavInner />
     </Suspense>
   );

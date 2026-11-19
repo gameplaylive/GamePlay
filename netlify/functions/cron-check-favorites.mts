@@ -1,6 +1,6 @@
 import type { Config } from "@netlify/functions";
 
-/** Favorite creator live checks — YouTube every 10m. */
+/** Favorite creator live + recent VODs — YouTube & Twitch every 10m. */
 export default async () => {
   const base = process.env.URL || process.env.DEPLOY_PRIME_URL || process.env.NEXT_PUBLIC_APP_URL;
   const secret = process.env.CRON_SECRET;
@@ -9,7 +9,7 @@ export default async () => {
   }
 
   const res = await fetch(
-    `${base.replace(/\/$/, "")}/api/cron/check-favorite-live?platform=youtube`,
+    `${base.replace(/\/$/, "")}/api/cron/check-favorite-live?platform=all`,
     {
       method: "GET",
       headers: { Authorization: `Bearer ${secret}` },

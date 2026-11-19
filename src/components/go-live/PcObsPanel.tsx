@@ -132,7 +132,7 @@ export function PcObsPanel({ title, game, onStatus, onError, onProRequired }: Pr
           <p className="text-sm font-bold">Your OBS / Streamlabs ingest</p>
         </div>
         <p className="mt-1 text-xs text-muted">
-          Unique stream key linked to your Pro account. When OBS pushes video, we flip you live on the homepage.
+          Unique stream key linked to your account. When OBS pushes video, we flip you live on the homepage.
         </p>
 
         <div className="mt-4 space-y-3">

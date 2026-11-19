@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
+import Script from "next/script";
 import { Outfit, Syne } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/components/providers/AppProviders";
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
     template: "%s · GamePlay Live",
   },
   description:
-    "Creator-first gaming hub — watch live gameplay, go live to YouTube from mobile or OBS, and run tournament ops. Creator Pro unlocks the studio for ₹99/mo.",
+    "Free gaming hub — watch live gameplay, go live to YouTube from mobile or OBS, find squads, and follow your favorite creators.",
   applicationName: "GamePlay Live",
   manifest: "/manifest.json",
   appleWebApp: {
@@ -53,17 +54,20 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${outfit.variable} ${syne.variable} h-full antialiased`}>
+    // suppressHydrationWarning: browser extensions + AdSense often mutate <html>/<body> attrs before hydrate
+    <html lang="en" className={`${outfit.variable} ${syne.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        {/* Plain script in head so AdSense crawlers see ca-pub without waiting on hydration. */}
-        <script
+      </head>
+      <body className="flex min-h-full flex-col overflow-x-hidden" suppressHydrationWarning>
+        {/* next/script avoids raw <script crossOrigin> SSR/client attribute mismatches */}
+        <Script
+          id="google-adsense"
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(ADSENSE_CLIENT)}`}
           crossOrigin="anonymous"
+          strategy="afterInteractive"
         />
-      </head>
-      <body className="flex min-h-full flex-col overflow-x-hidden">
         <AppProviders>
           <NavBar />
           <Suspense fallback={null}>

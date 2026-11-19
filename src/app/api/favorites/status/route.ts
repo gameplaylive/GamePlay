@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import type { FavoriteGamerStatus, UserFavorite } from "@/lib/types";
+import type { CreatorRecentVideo, FavoriteGamerStatus, UserFavorite } from "@/lib/types";
 
 /**
- * Returns live status from shared tracked_creators cache (filled by
- * /api/cron/check-favorite-live). Does not spend YouTube quota per user view.
+ * Returns live + recent-video cache from tracked_creators
+ * (filled by /api/cron/check-favorite-live every ~10m).
  */
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
   if (!service || !favorites.length) {
     return NextResponse.json({
-      statuses: favorites.map((f) => ({ ...f, is_live: false })),
+      statuses: favorites.map((f) => ({ ...f, is_live: false, recent_videos: [] })),
       source: service ? "empty" : "demo",
     });
   }
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
         ? `youtube:${fav.channel_id_or_username}`
         : `twitch:${fav.channel_id_or_username.toLowerCase()}`;
     const row = tracked[key];
-    const status: FavoriteGamerStatus = { ...fav, is_live: false };
+    const status: FavoriteGamerStatus = { ...fav, is_live: false, recent_videos: [] };
     if (!row) return status;
 
     status.is_live = Boolean(row.is_live);
@@ -74,6 +74,21 @@ export async function POST(request: Request) {
     status.latest_video_id = (row.latest_video_id as string) || undefined;
     status.latest_video_title = (row.latest_video_title as string) || undefined;
     status.latest_video_thumbnail = (row.latest_video_thumbnail as string) || undefined;
+    status.recent_videos = Array.isArray(row.recent_videos)
+      ? (row.recent_videos as CreatorRecentVideo[])
+      : [];
+    status.last_checked_at = (row.last_checked_at as string) || null;
+
+    // Backfill recent list from latest_* if cron hasn't written recent_videos yet
+    if (!status.recent_videos.length && status.latest_video_id) {
+      status.recent_videos = [
+        {
+          id: status.latest_video_id,
+          title: status.latest_video_title || "Recent video",
+          thumbnail: status.latest_video_thumbnail || "",
+        },
+      ];
+    }
     return status;
   });
 

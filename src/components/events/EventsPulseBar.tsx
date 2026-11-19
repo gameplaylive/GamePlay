@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Bell, Check } from "lucide-react";
 import type { PulseEvent } from "@/lib/types";
-import { getSamplePulseEvents, pulseTimeLabel } from "@/lib/events";
+import { pulseTimeLabel } from "@/lib/events";
 import { useApp } from "@/components/providers/AppProviders";
 import { ensurePushSubscription } from "@/lib/push";
 import { cn } from "@/lib/utils";
@@ -23,9 +23,9 @@ export function EventsPulseBar() {
         const data = await res.json();
         if (cancelled) return;
         if (data.events?.length) setEvents(data.events);
-        else setEvents(getSamplePulseEvents());
+        else setEvents([]);
       } catch {
-        if (!cancelled) setEvents(getSamplePulseEvents());
+        if (!cancelled) setEvents([]);
       }
     })();
     return () => {

@@ -6,7 +6,7 @@ Creator-first gaming hub — browse live streams, go live to YouTube (mobile / O
 
 - Next.js App Router + TypeScript + Tailwind CSS v4
 - Supabase (Auth Google-only, Postgres, Realtime chat)
-- Cashfree subscriptions (India, ₹99/mo)
+- Deployed on **Cloudflare Workers** via `@opennextjs/cloudflare`
 - PWA manifest (`public/manifest.json`)
 
 ## Quick start (UI works before Supabase)
@@ -34,9 +34,27 @@ Open [http://localhost:3000](http://localhost:3000) → **Continue with Google**
 
 `/admin` (role = admin): Overview KPIs, pricing (INR), user management, game directory, API vault (YouTube / Twitch / **Cashfree** / AdSense / **AdMob**).
 
-Pro checkout uses **Cashfree** (`/api/cashfree/checkout` + `/api/cashfree/webhook`). Point Cashfree webhooks at `https://YOUR_DOMAIN/api/cashfree/webhook`.
+## Deploy (Cloudflare Workers)
 
-Cron (**Netlify**, production host): scheduled functions in `netlify/functions/` call the app routes on a timer (YouTube live every **20m**, Twitch every 3m, trending every 6h). Set `CRON_SECRET` in Netlify env. `vercel.json` is optional leftover and is **not** used on Netlify.
+**Live (no Netlify badge):** https://gameplay-live.gameplaylive.workers.dev
+
+```bash
+npx wrangler login
+npm run deploy
+```
+
+Secrets are applied with `npx wrangler secret bulk` (or `secret put`) from `.env.local`. Cron triggers (`wrangler.jsonc` → `triggers.crons`): YouTube **20m**, Twitch **3m**, trending **6h**, favorites + reminders **10m**.
+
+### Custom domain (`gameplaylive.live`)
+
+1. Add the zone in Cloudflare Dashboard → Add a site → `gameplaylive.live`.
+2. At the registrar, switch nameservers to the two Cloudflare assigns.
+3. Workers → `gameplay-live` → **Custom Domains** → add `gameplaylive.live` and `www`.
+4. Update `NEXT_PUBLIC_APP_URL` / `APP_URL` secrets to `https://gameplaylive.live`, then `npm run deploy`.
+5. Supabase Auth → add `https://gameplaylive.live/auth/callback` (keep the workers.dev URL until cutover is done).
+6. Disconnect the Netlify site so it stops serving the apex.
+
+`netlify.toml` / `netlify/functions/` can be removed after Netlify is offline.
 
 ## Discovery quota (Top 10 + Favorites)
 
@@ -73,5 +91,7 @@ In Google Cloud / Supabase Auth, add OAuth scope `https://www.googleapis.com/aut
 ## Scripts
 
 - `npm run dev` — local development
-- `npm run build` — production build
-- `npm run start` — serve build
+- `npm run build` — Next.js production build
+- `npm run preview` — OpenNext build + local Workers preview
+- `npm run deploy` — OpenNext build + deploy to Cloudflare
+- `npm run start` — serve Next build (Node; not used on Cloudflare)

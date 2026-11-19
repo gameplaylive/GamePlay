@@ -8,7 +8,7 @@ export function getSamplePandascoreMatches(now = Date.now()): TournamentMatch[] 
       source: "pandascore",
       status: "LIVE",
       game: "Valorant",
-      tournament_name: "VCT Masters Sample",
+      tournament_name: "VCT Masters Pacific",
       match_title: "Semi Final — Map 2",
       start_time: new Date(now - 25 * 60000).toISOString(),
       team_a: "Sentinels",
@@ -21,11 +21,41 @@ export function getSamplePandascoreMatches(now = Date.now()): TournamentMatch[] 
       is_featured: true,
     },
     {
+      id: "ps-sample-cs2-live",
+      source: "pandascore",
+      status: "LIVE",
+      game: "CS2",
+      tournament_name: "ESL Pro League",
+      match_title: "Group Stage — Bo3",
+      start_time: new Date(now - 48 * 60000).toISOString(),
+      team_a: "FaZe Clan",
+      team_b: "Vitality",
+      platform: "twitch",
+      stream_url: "https://www.twitch.tv/esl_csgo",
+      embed_external_id: "esl_csgo",
+      is_featured: true,
+    },
+    {
+      id: "ps-sample-dota-live",
+      source: "pandascore",
+      status: "LIVE",
+      game: "Dota 2",
+      tournament_name: "DreamLeague Season",
+      match_title: "Upper Bracket Final",
+      start_time: new Date(now - 12 * 60000).toISOString(),
+      team_a: "Team Spirit",
+      team_b: "OG",
+      platform: "twitch",
+      stream_url: "https://www.twitch.tv/dota2ti",
+      embed_external_id: "dota2ti",
+      is_featured: true,
+    },
+    {
       id: "ps-sample-cs2-1",
       source: "pandascore",
       status: "UPCOMING",
       game: "CS2",
-      tournament_name: "BLAST Premier Sample",
+      tournament_name: "BLAST Premier",
       match_title: "Quarter Final",
       start_time: new Date(now + 3 * 3600000).toISOString(),
       team_a: "Natus Vincere",
@@ -33,8 +63,8 @@ export function getSamplePandascoreMatches(now = Date.now()): TournamentMatch[] 
       team_a_logo: "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?auto=format&fit=crop&w=80&h=80&q=80",
       team_b_logo: "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?auto=format&fit=crop&w=80&h=80&q=80",
       platform: "twitch",
-      stream_url: "https://www.twitch.tv/eslcs",
-      embed_external_id: "eslcs",
+      stream_url: "https://www.twitch.tv/blastpremier",
+      embed_external_id: "blastpremier",
       is_featured: true,
     },
     {
@@ -42,15 +72,30 @@ export function getSamplePandascoreMatches(now = Date.now()): TournamentMatch[] 
       source: "pandascore",
       status: "UPCOMING",
       game: "LoL",
-      tournament_name: "LCK Spring Sample",
+      tournament_name: "LCK Spring",
       match_title: "Week 3 — Bo3",
       start_time: new Date(now + 26 * 3600000).toISOString(),
       team_a: "T1",
       team_b: "Gen.G",
-      platform: "youtube",
-      stream_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      embed_external_id: "dQw4w9WgXcQ",
+      platform: "twitch",
+      stream_url: "https://www.twitch.tv/lck",
+      embed_external_id: "lck",
       is_featured: false,
+    },
+    {
+      id: "ps-sample-val-up",
+      source: "pandascore",
+      status: "UPCOMING",
+      game: "Valorant",
+      tournament_name: "VCT Challengers IN",
+      match_title: "Playoffs — Round 1",
+      start_time: new Date(now + 8 * 3600000).toISOString(),
+      team_a: "Global Esports",
+      team_b: "Orion",
+      platform: "youtube",
+      stream_url: "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+      embed_external_id: "jNQXAC9IVRw",
+      is_featured: true,
     },
   ];
 }
@@ -69,6 +114,20 @@ export function getSampleCustomMatches(now = Date.now()): TournamentMatch[] {
       platform: "youtube",
       stream_url: "https://www.youtube.com/watch?v=jNQXAC9IVRw",
       embed_external_id: "jNQXAC9IVRw",
+      is_featured: true,
+    },
+    {
+      id: "33333333-3333-3333-3333-333333333304",
+      source: "custom",
+      status: "LIVE",
+      game: "BGMI",
+      tournament_name: "BMPS Season Finals",
+      match_title: "Lobby 1 — Live Drop",
+      start_time: new Date(now - 55 * 60000).toISOString(),
+      end_time: new Date(now + 2 * 3600000).toISOString(),
+      platform: "youtube",
+      stream_url: "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+      embed_external_id: "aqz-KE-bpKQ",
       is_featured: true,
     },
     {
@@ -97,6 +156,20 @@ export function getSampleCustomMatches(now = Date.now()): TournamentMatch[] {
       channel_id: "pubgmobile",
       stream_url: "https://www.twitch.tv/pubgmobile",
       embed_external_id: "pubgmobile",
+      is_featured: true,
+    },
+    {
+      id: "33333333-3333-3333-3333-333333333305",
+      source: "custom",
+      status: "UPCOMING",
+      game: "Free Fire",
+      tournament_name: "Free Fire Max Cup",
+      match_title: "Group Stage — Day 1",
+      start_time: new Date(now + 5 * 3600000).toISOString(),
+      end_time: new Date(now + 9 * 3600000).toISOString(),
+      platform: "youtube",
+      stream_url: "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+      embed_external_id: "aqz-KE-bpKQ",
       is_featured: true,
     },
   ];
@@ -141,12 +214,15 @@ export function parseStreamUrl(url: string | null | undefined): {
   return { platform: null, externalId: null };
 }
 
+/**
+ * LIVE only when the official channel is confirmed broadcasting.
+ * Schedule window alone never marks LIVE (avoids "channel offline" Watch Live links).
+ */
 export function deriveCustomStatus(row: CustomTournament, isLiveDetected: boolean): TournamentStatus {
   if (isLiveDetected) return "LIVE";
   const now = Date.now();
   const start = new Date(row.start_time).getTime();
   const end = row.end_time ? new Date(row.end_time).getTime() : start + 4 * 3600000;
-  if (now >= start && now <= end) return "LIVE";
   if (now > end) return "ENDED";
   return "UPCOMING";
 }
@@ -251,10 +327,22 @@ export function mapPandaScoreMatch(raw: any, forcedStatus?: TournamentStatus): T
 }
 
 export function buildWatchPath(match: TournamentMatch): string | null {
-  if (!match.embed_external_id || !match.platform) return null;
+  let platform = match.platform;
+  let external = match.embed_external_id;
+  if ((!platform || !external) && match.stream_url) {
+    const parsed = parseStreamUrl(match.stream_url);
+    platform = platform || parsed.platform;
+    external = external || parsed.externalId;
+  }
+  if (!external && match.platform === "twitch" && match.channel_id) {
+    platform = "twitch";
+    external = match.channel_id;
+  }
+  if (!platform || !external) return null;
+
   const params = new URLSearchParams({
-    platform: match.platform,
-    external: match.embed_external_id,
+    platform,
+    external,
     type: match.status === "LIVE" ? "live" : "video",
     title: match.match_title || match.tournament_name,
     streamer: match.tournament_name,

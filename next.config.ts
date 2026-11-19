@@ -73,7 +73,7 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
-    // Dev/Turbopack needs inline/eval scripts; strict CSP is for production (Netlify) only.
+    // Dev/Turbopack needs inline/eval scripts; strict CSP is for production only.
     if (process.env.NODE_ENV !== "production") {
       return [];
     }
@@ -92,3 +92,6 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+initOpenNextCloudflareForDev();

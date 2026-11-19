@@ -4,7 +4,7 @@ import { LegalShell } from "@/components/legal/LegalShell";
 export const metadata = {
   title: "About GamePlay Live",
   description:
-    "Learn how GamePlay Live curates YouTube & Twitch gaming streams, tournaments, and Creator Pro tools.",
+    "Learn how GamePlay Live curates YouTube & Twitch gaming streams, tournaments, and free creator tools.",
 };
 
 export default function AboutPage() {
@@ -13,7 +13,7 @@ export default function AboutPage() {
       <p>
         <strong>GamePlay Live</strong> (gameplaylive.live) is a creator-first gaming hub built for
         fans and streamers in India and worldwide. We make it easy to discover what&apos;s live,
-        follow creators you care about, and — for Creator Pro members — go live with studio tools.
+        follow creators you care about, and go live with free studio tools.
       </p>
 
       <h2>Our mission</h2>
@@ -56,8 +56,8 @@ export default function AboutPage() {
           <strong>Tournaments:</strong> track curated esports and mobile events in one hub.
         </li>
         <li>
-          <strong>Create:</strong> Creator Pro unlocks Go Live Studio (mobile + OBS), presets, and
-          go-live alerts for ₹99/month via Cashfree.
+          <strong>Create:</strong> Go Live Studio (mobile + OBS), presets, and go-live alerts are
+          free for every signed-in creator.
         </li>
       </ul>
 
@@ -65,7 +65,7 @@ export default function AboutPage() {
       <p>
         GamePlay Live may show Google AdSense banners on the website and Google AdMob banners in our
         Android app (outside the video player — not inside YouTube/Twitch embeds). These help keep
-        the hub running for everyone, including Creator Pro. Details are in our{" "}
+        the hub running for everyone. Details are in our{" "}
         <Link href="/privacy-policy" className="text-cyan">
           Privacy Policy
         </Link>

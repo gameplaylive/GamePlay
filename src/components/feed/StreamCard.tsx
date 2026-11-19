@@ -16,14 +16,16 @@ export function StreamCard({ stream }: { stream: CachedStream }) {
     stream.content_type === "live" ||
     (stream.content_type === "trending" && stream.platform === "twitch" && stream.viewer_count > 0);
   const path = `/watch/${stream.id}`;
-  const watchUrl =
-    typeof window !== "undefined" ? `${window.location.origin}${path}` : path;
+  // Keep SSR/client URL identical on first paint (origin added only when sharing)
+  const watchUrl = path;
 
   async function onShare(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    const absolute =
+      typeof window !== "undefined" ? `${window.location.origin}${path}` : path;
     const shared = await shareContent({
-      url: watchUrl,
+      url: absolute,
       title: stream.title,
       gameTitle: stream.game_title,
       streamerName: stream.streamer_name,

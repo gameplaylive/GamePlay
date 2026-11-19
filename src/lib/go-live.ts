@@ -60,12 +60,23 @@ export function watchHrefForCommunity(stream: {
   playback_url?: string | null;
   source?: string;
 }): string | null {
-  const isPcHls = Boolean(stream.playback_url) && (stream.source === "pc" || !stream.youtube_video_id);
-  if (!stream.youtube_video_id && !stream.playback_url) return null;
+  const source = stream.source || "";
+  const isTwitch = source === "twitch" && Boolean(stream.playback_url);
+  const isPcHls = source === "pc" && Boolean(stream.playback_url);
+  const isYoutube = Boolean(stream.youtube_video_id);
+
+  if (!isTwitch && !isPcHls && !isYoutube) return null;
+
+  const platform = isTwitch ? "twitch" : isPcHls ? "hls" : "youtube";
+  const external = isTwitch
+    ? stream.playback_url!
+    : isPcHls
+      ? stream.playback_url!
+      : stream.youtube_video_id!;
 
   const q = new URLSearchParams({
-    platform: isPcHls ? "hls" : "youtube",
-    external: isPcHls ? stream.playback_url! : stream.youtube_video_id!,
+    platform,
+    external,
     type: "live",
     title: stream.stream_title,
     streamer: stream.creator_name,

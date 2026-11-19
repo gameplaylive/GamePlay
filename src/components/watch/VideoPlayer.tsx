@@ -62,19 +62,29 @@ export function VideoPlayer({ platform, externalId, contentType }: Props) {
     );
   }
 
+  const twitchParents = Array.from(
+    new Set([hostname, "gameplaylive.live", "www.gameplaylive.live", "localhost"])
+  );
+  const parentQs = twitchParents.map((p) => `parent=${encodeURIComponent(p)}`).join("&");
+
   let src = "";
   if (platform === "youtube") {
-    src = `https://www.youtube.com/embed/${externalId}?autoplay=1&rel=0`;
+    // externalId may be a bare video id or a full embed URL
+    const idMatch = externalId.match(/(?:embed\/|v=)?([\w-]{11})(?:[?&]|$)/);
+    const videoId = idMatch?.[1] && /^[\w-]{11}$/.test(idMatch[1]) ? idMatch[1] : externalId;
+    src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
   } else if (contentType === "live") {
-    src = `https://player.twitch.tv/?channel=${externalId}&parent=${hostname}&autoplay=true`;
+    const channel = externalId.replace(/^https?:\/\/(www\.)?twitch\.tv\//i, "").split(/[/?#]/)[0];
+    src = `https://player.twitch.tv/?channel=${encodeURIComponent(channel)}&${parentQs}&autoplay=true`;
   } else {
     const videoId = externalId.startsWith("v") ? externalId : `v${externalId}`;
-    src = `https://player.twitch.tv/?video=${videoId}&parent=${hostname}&autoplay=true`;
+    src = `https://player.twitch.tv/?video=${videoId}&${parentQs}&autoplay=true`;
   }
 
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border-glow bg-black">
       <iframe
+        key={src}
         src={src}
         title="GamePlay Live player"
         className="absolute inset-0 h-full w-full"

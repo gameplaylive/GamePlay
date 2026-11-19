@@ -7,7 +7,7 @@ import { isAndroidNativeApp } from "@/lib/go-live";
 /**
  * Syncs ads settings to the Android AdMob banner.
  * Web AdSense stays off inside the WebView; native shows AdMob instead.
- * Creator Pro does not hide banners (they sit outside the player, not in YT/Twitch).
+ * Banners sit outside the player (not inside YT/Twitch embeds).
  */
 export function NativeAdMobSync() {
   const { settings, loading } = useApp();

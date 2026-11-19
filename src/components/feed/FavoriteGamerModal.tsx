@@ -14,7 +14,7 @@ interface Props {
 }
 
 export function FavoriteGamerModal({ open, onClose }: Props) {
-  const { profile, favorites, setFavorites, demoMode, signInWithGoogle, openProModal } = useApp();
+  const { profile, favorites, setFavorites, demoMode, signInWithGoogle } = useApp();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CreatorSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -22,18 +22,14 @@ export function FavoriteGamerModal({ open, onClose }: Props) {
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
 
-  const isPro = profile?.subscription_tier === "pro";
-  const limit = isPro ? FAVORITE_LIMITS.pro : FAVORITE_LIMITS.free;
+  const limit = FAVORITE_LIMITS.free;
   const used = favorites.length;
   const atLimit = used >= limit;
 
   const limitBanner = useMemo(() => {
     if (!atLimit) return null;
-    if (isPro) {
-      return `Maximum Limit Reached (${limit}/${limit}): Remove an existing gamer to add a new one.`;
-    }
-    return `Slot Limit Reached (${limit}/${limit}): Remove an existing gamer to add a new one, or upgrade to Pro for up to ${FAVORITE_LIMITS.pro} Favorite Gamers.`;
-  }, [atLimit, isPro, limit]);
+    return `Maximum Limit Reached (${limit}/${limit}): Remove an existing gamer to add a new one.`;
+  }, [atLimit, limit]);
 
   if (!open) return null;
 
@@ -76,12 +72,6 @@ export function FavoriteGamerModal({ open, onClose }: Props) {
     }
     if (atLimit) {
       setError(limitBanner || "Slot limit reached");
-      if (!isPro) {
-        openProModal({
-          highlight: "favorites",
-          contextTitle: "Unlock up to 15 Favorite Gamers with Pro",
-        });
-      }
       return;
     }
 
@@ -130,21 +120,23 @@ export function FavoriteGamerModal({ open, onClose }: Props) {
       if (!res.ok) {
         if (data.error === "SLOT_LIMIT") {
           setError(data.message || limitBanner || "Slot limit reached");
-          if (!isPro) {
-            openProModal({
-              highlight: "favorites",
-              contextTitle: "Unlock up to 15 Favorite Gamers with Pro",
-            });
-          }
           return;
         }
         throw new Error(data.error || data.message || "Could not pin gamer");
       }
       if (data.favorite) {
-        setFavorites([
-          data.favorite as UserFavorite,
-          ...favorites.filter((f) => f.id !== (data.favorite as UserFavorite).id),
-        ]);
+        const fav = data.favorite as UserFavorite;
+        setFavorites([fav, ...favorites.filter((f) => f.id !== fav.id)]);
+        // Warm recent-video cache so My Gamers profile has uploads ready
+        void fetch("/api/favorites/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            platform: fav.platform,
+            channel_id_or_username: fav.channel_id_or_username,
+            force: true,
+          }),
+        });
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Pin failed");
@@ -188,20 +180,6 @@ export function FavoriteGamerModal({ open, onClose }: Props) {
           {limitBanner && (
             <div className="rounded-2xl border border-gold/40 bg-gold/10 px-3 py-2.5 text-xs text-gold">
               <p>{limitBanner}</p>
-              {!isPro && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    openProModal({
-                      highlight: "favorites",
-                      contextTitle: "Unlock up to 15 Favorite Gamers with Pro",
-                    })
-                  }
-                  className="mt-2 text-[11px] font-bold underline"
-                >
-                  Upgrade to Pro
-                </button>
-              )}
             </div>
           )}
 

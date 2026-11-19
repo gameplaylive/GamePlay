@@ -71,9 +71,28 @@ export function ShareModal({
   const [copied, setCopied] = useState(false);
   const [discordHint, setDiscordHint] = useState(false);
 
+  const absoluteUrl = useMemo(() => {
+    // Only resolve origin when modal is open (keeps SSR/client first paint identical)
+    if (!open || /^https?:\/\//i.test(url)) return url;
+    if (typeof window === "undefined") return url;
+    try {
+      return new URL(url, window.location.origin).toString();
+    } catch {
+      return url;
+    }
+  }, [url, open]);
+
   const payload: SharePayload = useMemo(
-    () => ({ url, title, gameTitle, streamerName, thumbnailUrl, isLive, platform }),
-    [url, title, gameTitle, streamerName, thumbnailUrl, isLive, platform]
+    () => ({
+      url: absoluteUrl,
+      title,
+      gameTitle,
+      streamerName,
+      thumbnailUrl,
+      isLive,
+      platform,
+    }),
+    [absoluteUrl, title, gameTitle, streamerName, thumbnailUrl, isLive, platform]
   );
 
   const promo = useMemo(() => buildSharePromo(payload), [payload]);

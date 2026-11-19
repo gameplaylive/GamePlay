@@ -45,8 +45,19 @@ export function CommunityCreatorsRow() {
           const href = watchHrefForCommunity(s);
           const thumb = s.youtube_video_id
             ? `https://i.ytimg.com/vi/${s.youtube_video_id}/hqdefault.jpg`
-            : "/icons/icon-512.png";
-          const sourceBadge = s.source === "pc" ? "PC" : s.source === "mobile" ? "PHONE" : null;
+            : s.source === "twitch" && s.playback_url
+              ? `https://static-cdn.jtvnw.net/previews-ttv/live_user_${s.playback_url}-440x248.jpg`
+              : "/icons/icon-512.png";
+          const sourceBadge =
+            s.source === "twitch"
+              ? "TWITCH"
+              : s.source === "youtube"
+                ? "YT"
+                : s.source === "pc"
+                  ? "PC"
+                  : s.source === "mobile"
+                    ? "PHONE"
+                    : null;
           const card = (
             <div className="relative w-[148px] shrink-0 overflow-hidden rounded-2xl border border-crimson/25 bg-[#0c101a] sm:w-[168px]">
               <div className="relative aspect-[16/10]">

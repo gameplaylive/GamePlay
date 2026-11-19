@@ -1,5 +1,4 @@
 import { WatchClient } from "@/components/watch/WatchClient";
-import { MOCK_STREAMS } from "@/lib/mock-data";
 import { createClient } from "@/lib/supabase/server";
 import type { CachedStream } from "@/lib/types";
 import type { Metadata } from "next";
@@ -67,7 +66,7 @@ async function loadStreamForMeta(
     const { data } = await supabase.from("cached_streams").select("*").eq("id", streamId).maybeSingle();
     if (data) return data as CachedStream;
   }
-  return MOCK_STREAMS.find((s) => s.id === streamId) || null;
+  return null;
 }
 
 export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
@@ -153,12 +152,18 @@ export default async function WatchPage({ params, searchParams }: PageProps) {
       language: "English",
       updated_at: new Date().toISOString(),
     };
-    return (
-      <WatchClient
-        stream={stream}
-        related={MOCK_STREAMS.filter((s) => s.content_type === "live").slice(0, 6)}
-      />
-    );
+    let related: CachedStream[] = [];
+    const supabaseRelated = await createClient();
+    if (supabaseRelated) {
+      const { data: more } = await supabaseRelated
+        .from("cached_streams")
+        .select("*")
+        .eq("content_type", "live")
+        .order("viewer_count", { ascending: false })
+        .limit(6);
+      related = (more as CachedStream[]) || [];
+    }
+    return <WatchClient stream={stream} related={related} />;
   }
 
   const supabase = await createClient();
@@ -177,11 +182,6 @@ export default async function WatchPage({ params, searchParams }: PageProps) {
         .limit(12);
       related = (more as CachedStream[]) || [];
     }
-  }
-
-  if (!stream) {
-    stream = MOCK_STREAMS.find((s) => s.id === streamId) || null;
-    related = MOCK_STREAMS.filter((s) => s.id !== streamId && s.game_slug === stream?.game_slug).slice(0, 8);
   }
 
   if (!stream) notFound();

@@ -681,7 +681,6 @@ create policy "Users insert own ingest credentials"
     and exists (
       select 1 from public.profiles p
       where p.id = auth.uid()
-        and p.subscription_tier = 'pro'
         and coalesce(p.is_banned, false) = false
     )
   );
@@ -700,7 +699,7 @@ create table if not exists public.community_live_streams (
   ended_at timestamptz,
   resolution text not null default '720p60',
   mic_enabled boolean not null default true,
-  source text not null default 'mobile' check (source in ('mobile', 'pc', 'youtube')),
+  source text not null default 'mobile' check (source in ('mobile', 'pc', 'youtube', 'twitch')),
   playback_url text,
   ingest_stream_key text
 );
@@ -717,7 +716,7 @@ create policy "Anyone can read live community streams"
   on public.community_live_streams for select
   using (is_live = true or auth.uid() = user_id or public.is_admin());
 
-create policy "Pro users can insert own community streams"
+create policy "Signed-in users can insert own community streams"
   on public.community_live_streams for insert
   to authenticated
   with check (
@@ -725,7 +724,6 @@ create policy "Pro users can insert own community streams"
     and exists (
       select 1 from public.profiles p
       where p.id = auth.uid()
-        and p.subscription_tier = 'pro'
         and coalesce(p.is_banned, false) = false
     )
   );
@@ -795,6 +793,7 @@ create table if not exists public.tracked_creators (
   latest_video_id text,
   latest_video_title text,
   latest_video_thumbnail text,
+  recent_videos jsonb not null default '[]'::jsonb,
   pin_count integer not null default 0,
   last_checked_at timestamptz,
   search_cached_until timestamptz,

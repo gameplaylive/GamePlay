@@ -16,8 +16,8 @@ export function Footer() {
         <div>
           <BrandLogo size="sm" withWordmark />
           <p className="mt-2 max-w-md text-sm text-muted">
-            GamePlay Live curates public YouTube &amp; Twitch gameplay, tournaments, and Creator Pro
-            studio tools. Streams remain property of their creators.
+            GamePlay Live curates public YouTube &amp; Twitch gameplay, tournaments, and free studio
+            tools for creators. Streams remain property of their creators.
           </p>
           <p className="mt-2 text-xs text-muted">
             Support:{" "}

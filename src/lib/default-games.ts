@@ -162,8 +162,9 @@ export const DEFAULT_GAMES: DefaultGameDef[] = [
 export const YOUTUBE_LIVE_BROAD_QUERY =
   'BGMI|"Free Fire"|Valorant|"GTA V"|Minecraft|Roblox|CS2|"Dota 2"|Fortnite|"Call of Duty"|Warzone|CODM';
 
+/** All signed-in users share the same following cap (Pro paywall removed for launch). */
 export const FAVORITE_LIMITS = {
-  free: 5,
+  free: 15,
   pro: 15,
 } as const;
 

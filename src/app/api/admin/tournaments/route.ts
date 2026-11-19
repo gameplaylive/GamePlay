@@ -1,25 +1,13 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { adminCookieName, isTournamentsAdmin } from "@/lib/admin-auth";
-import { getSampleCustomMatches } from "@/lib/tournaments";
 import type { CustomTournament } from "@/lib/types";
 import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
-const memoryStore: CustomTournament[] = getSampleCustomMatches().map((m) => ({
-  id: m.id,
-  tournament_name: m.tournament_name,
-  game: m.game,
-  match_title: m.match_title,
-  start_time: m.start_time,
-  end_time: m.end_time || null,
-  platform: (m.platform || "youtube") as "youtube" | "twitch",
-  channel_id: m.channel_id || "",
-  fallback_stream_url: m.stream_url || "",
-  is_featured: Boolean(m.is_featured),
-  created_at: new Date().toISOString(),
-}));
+/** In-memory only when Supabase is unavailable — never seed fake tournaments. */
+const memoryStore: CustomTournament[] = [];
 
 async function requireAdmin() {
   return isTournamentsAdmin();

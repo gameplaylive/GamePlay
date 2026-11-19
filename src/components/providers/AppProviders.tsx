@@ -8,7 +8,6 @@ import { createClient } from "@/lib/supabase/client";
 import { OnboardingModal } from "@/components/auth/OnboardingModal";
 import { AdSenseScript } from "@/components/AdSenseScript";
 import { NativeAdMobSync } from "@/components/NativeAdMobSync";
-import { ProBenefitsModal } from "@/components/ProBenefitsModal";
 import { YOUTUBE_OAUTH_SCOPE } from "@/lib/go-live";
 
 export interface ProModalOptions {
@@ -250,16 +249,10 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     setFavorites([]);
   }, [supabase]);
 
-  const openProModal = useCallback((options?: ProModalOptions) => {
-    // Ignore synthetic mouse events when used as onClick={openProModal}
-    const safe =
-      options &&
-      typeof options === "object" &&
-      ("inrPrice" in options || "highlight" in options || "contextTitle" in options)
-        ? { inrPrice: true, ...options }
-        : { inrPrice: true };
-    setProModalOptions(safe);
-    setProModalOpen(true);
+  /** Paywalls removed for launch — kept as no-op so call sites compile. */
+  const openProModal = useCallback((_options?: ProModalOptions) => {
+    setProModalOpen(false);
+    setProModalOptions(undefined);
   }, []);
 
   const closeProModal = useCallback(() => {
@@ -297,7 +290,6 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       <NativeAdMobSync />
       {children}
       {needsOnboarding && <OnboardingModal />}
-      <ProBenefitsModal open={proModalOpen} onClose={closeProModal} options={proModalOptions} />
     </AppContext.Provider>
   );
 }

@@ -2,271 +2,116 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  ChevronDown,
-  Download,
-  Mic,
-  MicOff,
-  Monitor,
-  Radio,
-  Smartphone,
-  Tv,
-} from "lucide-react";
+import { Link2, Radio, Tv } from "lucide-react";
 import { useApp } from "@/components/providers/AppProviders";
-import { CreatorStudioTools } from "@/components/go-live/CreatorStudioTools";
-import { PcObsPanel } from "@/components/go-live/PcObsPanel";
-import {
-  buildRtmpUrl,
-  gamePackageName,
-  isAndroidNativeApp,
-  resolutionLabel,
-} from "@/lib/go-live";
-import { createClient } from "@/lib/supabase/client";
-import type { CommunityGame, StreamResolution } from "@/lib/types";
+import { parseStreamLink, type LinkedPlatform } from "@/lib/stream-link";
+import { watchHrefForCommunity } from "@/lib/go-live";
+import type { CommunityGame, CommunityLiveStream } from "@/lib/types";
 import { COMMUNITY_GAMES } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const APP_DOWNLOAD_URL =
-  process.env.NEXT_PUBLIC_ANDROID_APK_URL ||
-  process.env.NEXT_PUBLIC_PLAY_STORE_URL ||
-  "https://play.google.com/store/apps/details?id=app.gameplaylive";
-
-type ConnectMode = "auto" | "advanced";
-type StudioPlatform = "mobile" | "pc";
-
 export function GoLiveClient() {
-  const { profile, loading, openProModal, signInWithGoogle, connectYouTube, demoMode } = useApp();
-  const [studio, setStudio] = useState<StudioPlatform>("mobile");
-  const [title, setTitle] = useState("BGMI Rank Push Live | Gameplay Live");
+  const { profile, loading, signInWithGoogle } = useApp();
+  const [platform, setPlatform] = useState<LinkedPlatform>("youtube");
+  const [streamLink, setStreamLink] = useState("");
+  const [title, setTitle] = useState("BGMI Rank Push Live");
   const [game, setGame] = useState<CommunityGame>("BGMI");
-  const [resolution, setResolution] = useState<StreamResolution>("720p60");
-  const [micEnabled, setMicEnabled] = useState(true);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [manualKey, setManualKey] = useState("");
-  const [mode, setMode] = useState<ConnectMode>("auto");
-  const [youtubeReady, setYoutubeReady] = useState(false);
-  const [rtmpUrl, setRtmpUrl] = useState("");
-  const [videoId, setVideoId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
-  const [liveStreamId, setLiveStreamId] = useState<string | null>(null);
-  const [nativeApp, setNativeApp] = useState(false);
-
-  const isPro = profile?.subscription_tier === "pro";
+  const [liveStream, setLiveStream] = useState<CommunityLiveStream | null>(null);
 
   useEffect(() => {
-    setNativeApp(isAndroidNativeApp());
+    if (game === "BGMI") setTitle("BGMI Rank Push Live");
+    else if (game === "Free Fire") setTitle("Free Fire MAX Live");
+    else setTitle(`${game} Live`);
+  }, [game]);
+
+  const loadLive = useCallback(async () => {
+    try {
+      const res = await fetch("/api/streams/go-live");
+      if (res.status === 401) return;
+      const data = await res.json();
+      if (data.stream?.is_live) setLiveStream(data.stream as CommunityLiveStream);
+      else setLiveStream(null);
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   useEffect(() => {
-    if (game === "BGMI") setTitle("BGMI Rank Push Live | Gameplay Live");
-    else if (game === "Free Fire") setTitle("Free Fire MAX Live | Gameplay Live");
-    else setTitle(`${game} Live | Gameplay Live`);
-  }, [game]);
+    if (profile) void loadLive();
+  }, [profile, loadLive]);
 
-  useEffect(() => {
-    if (!loading && profile && !isPro) {
-      openProModal({
-        highlight: "go-live",
-        contextTitle: "Unlock Direct-to-YouTube Creator Studio with Pro",
-      });
-    }
-  }, [loading, profile, isPro, openProModal]);
+  const preview = useMemo(() => {
+    if (!streamLink.trim()) return null;
+    return parseStreamLink(platform, streamLink);
+  }, [platform, streamLink]);
 
-  const canLaunch = useMemo(() => {
-    if (!title.trim()) return false;
-    if (mode === "advanced") return Boolean(manualKey.trim());
-    return youtubeReady && Boolean(rtmpUrl);
-  }, [title, mode, manualKey, youtubeReady, rtmpUrl]);
+  const canGoLive = Boolean(title.trim() && streamLink.trim() && preview?.ok);
 
-  const ensureAuth = useCallback(async () => {
+  async function handleGoLive() {
+    setError("");
+    setStatus("");
     if (!profile) {
       await signInWithGoogle("/go-live");
-      return false;
+      return;
     }
-    if (!isPro) {
-      openProModal({
-        highlight: "go-live",
-        contextTitle: "Unlock Direct-to-YouTube Creator Studio with Pro",
-      });
-      return false;
+
+    const parsed = parseStreamLink(platform, streamLink);
+    if (!parsed.ok) {
+      setError(parsed.error);
+      return;
     }
-    return true;
-  }, [profile, isPro, signInWithGoogle, openProModal]);
-
-  const onProRequired = useCallback(() => {
-    openProModal({
-      highlight: "go-live",
-      contextTitle: "Unlock Direct-to-YouTube Creator Studio with Pro",
-    });
-  }, [openProModal]);
-
-  async function handleConnectYouTube() {
-    setError("");
-    setStatus("");
-    if (!(await ensureAuth())) return;
-    setBusy(true);
-    try {
-      const token = await connectYouTube("/go-live");
-      if (!token && !demoMode) {
-        setStatus("Redirecting to Google for YouTube access…");
-        return;
-      }
-
-      const googleAccessToken = token || "";
-      const res = await fetch("/api/youtube/create-broadcast", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          game,
-          googleAccessToken: googleAccessToken || undefined,
-        }),
-      });
-      const data = await res.json();
-
-      if (res.status === 401 && data.code === "YOUTUBE_AUTH_REQUIRED") {
-        setStatus("Need YouTube permission — connecting Google…");
-        await connectYouTube("/go-live");
-        return;
-      }
-
-      if (!res.ok) {
-        if (demoMode || res.status === 503) {
-          const demoKey = `demo-key-${Date.now().toString(36)}`;
-          const demoVid = `demo${Date.now().toString(36)}`;
-          setRtmpUrl(buildRtmpUrl(demoKey));
-          setVideoId(demoVid);
-          setYoutubeReady(true);
-          setMode("auto");
-          setStatus("Demo broadcast ready (no YouTube API). Launch when you’re set.");
-          return;
-        }
-        throw new Error(data.error || "Could not create broadcast");
-      }
-
-      setRtmpUrl(data.rtmp_url || buildRtmpUrl(data.stream_key));
-      setVideoId(data.youtube_video_id || null);
-      setYoutubeReady(true);
-      setMode("auto");
-      setStatus("YouTube broadcast created. Ready to launch.");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "YouTube connect failed");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleLaunch() {
-    setError("");
-    setStatus("");
-    if (!(await ensureAuth())) return;
-
-    const finalRtmp = mode === "advanced" ? buildRtmpUrl(manualKey) : rtmpUrl;
-    if (!finalRtmp) {
-      setError("Connect YouTube or paste a stream key in Advanced.");
+    if (!title.trim()) {
+      setError("Add a short title for your stream card.");
       return;
     }
 
     setBusy(true);
     try {
-      const res = await fetch("/api/streams/start", {
+      const res = await fetch("/api/streams/go-live", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          platform,
+          stream_link: streamLink.trim(),
           stream_title: title.trim(),
           game,
-          youtube_video_id: mode === "auto" ? videoId : null,
-          resolution,
-          mic_enabled: micEnabled,
-          creator_name: profile?.full_name || undefined,
-          source: "mobile",
         }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        if (data.code === "PRO_REQUIRED") {
-          openProModal({
-            highlight: "go-live",
-            contextTitle: "Unlock Direct-to-YouTube Creator Studio with Pro",
-          });
-          return;
-        }
-        throw new Error(data.error || "Could not start stream");
-      }
+      if (!res.ok) throw new Error(data.error || "Could not go live");
 
-      setLiveStreamId(data.stream?.id || null);
-      const pkg = gamePackageName(game);
-
-      if (isAndroidNativeApp() && window.AndroidStreamBridge?.startStream) {
-        window.AndroidStreamBridge.startStream(finalRtmp, pkg, resolution, micEnabled);
-        setStatus("Streaming started — launching game…");
-      } else {
-        setStatus("Marked live on GamePlay Live. Open the Android app to stream your screen.");
-      }
+      setLiveStream(data.stream as CommunityLiveStream);
+      setStatus("You're live on GamePlay Live — fans can watch from the homepage.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Launch failed");
+      setError(e instanceof Error ? e.message : "Could not go live");
     } finally {
       setBusy(false);
     }
   }
 
-  async function handleStop() {
+  async function handleEndStream() {
     setBusy(true);
     setError("");
     try {
-      await fetch("/api/streams/stop", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stream_id: liveStreamId }),
-      });
-      window.AndroidStreamBridge?.stopStream?.();
-      setLiveStreamId(null);
-      setStatus("Stream stopped.");
+      const res = await fetch("/api/streams/go-live", { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not end stream");
+      setLiveStream(null);
+      setStatus("Stream ended. You can link a new live anytime.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Stop failed");
+      setError(e instanceof Error ? e.message : "Could not end stream");
     } finally {
       setBusy(false);
     }
   }
-
-  useEffect(() => {
-    if (!profile || !isPro || youtubeReady || studio !== "mobile") return;
-    const flag = sessionStorage.getItem("gameplay_live_youtube_connect");
-    if (flag !== "1") return;
-    sessionStorage.removeItem("gameplay_live_youtube_connect");
-    void (async () => {
-      const supabase = createClient();
-      if (!supabase) return;
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.provider_token;
-      if (!token) return;
-      setBusy(true);
-      try {
-        const res = await fetch("/api/youtube/create-broadcast", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: title.trim(), game, googleAccessToken: token }),
-        });
-        const payload = await res.json();
-        if (res.ok) {
-          setRtmpUrl(payload.rtmp_url || buildRtmpUrl(payload.stream_key));
-          setVideoId(payload.youtube_video_id || null);
-          setYoutubeReady(true);
-          setStatus("YouTube connected. Broadcast ready.");
-        }
-      } finally {
-        setBusy(false);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile, isPro, studio]);
 
   if (loading) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center text-sm text-muted">
-        Loading creator studio…
+        Loading…
       </div>
     );
   }
@@ -276,7 +121,10 @@ export function GoLiveClient() {
       <div className="mx-auto max-w-lg space-y-4 px-4 py-12 text-center">
         <Radio className="mx-auto text-crimson" size={36} />
         <h1 className="font-display text-3xl font-bold">Go Live</h1>
-        <p className="text-sm text-muted">Sign in with Google to open the creator studio.</p>
+        <p className="text-sm text-muted">
+          Already live on YouTube or Twitch? Sign in, paste your link, and show up on GamePlay Live
+          in one tap.
+        </p>
         <button
           onClick={() => void signInWithGoogle("/go-live")}
           className="btn-primary w-full rounded-2xl py-3.5 text-sm font-bold"
@@ -287,31 +135,8 @@ export function GoLiveClient() {
     );
   }
 
-  if (!isPro) {
-    return (
-      <div className="mx-auto max-w-lg space-y-4 px-4 py-12 text-center">
-        <Radio className="mx-auto text-gold" size={36} />
-        <h1 className="font-display text-3xl font-bold">Pro creators only</h1>
-        <p className="text-sm text-muted">
-          Stream from phone or OBS on PC — ₹99/month. Featured on the GamePlay Live homepage.
-        </p>
-        <button
-          onClick={() =>
-            openProModal({
-              highlight: "go-live",
-              contextTitle: "Unlock Direct-to-YouTube Creator Studio with Pro",
-            })
-          }
-          className="pro-cta-glow w-full rounded-2xl bg-gradient-to-r from-[#2F8F62] via-[#3FA572] to-[#C9A227] py-3.5 text-sm font-bold text-[#0B100C]"
-        >
-          Upgrade to Pro Now — ₹99/mo
-        </button>
-        <Link href="/" className="block text-sm text-cyan">
-          Back to feed
-        </Link>
-      </div>
-    );
-  }
+  const watchHref = liveStream ? watchHrefForCommunity(liveStream) : null;
+  const isLive = Boolean(liveStream?.is_live);
 
   return (
     <div className="mx-auto max-w-lg space-y-5 px-3 pb-24 pt-4 md:px-4">
@@ -319,222 +144,165 @@ export function GoLiveClient() {
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-crimson">Creator studio</p>
         <h1 className="mt-1 font-display text-3xl font-bold">Go Live</h1>
         <p className="mt-1 text-sm text-muted">
-          Creator Pro studio — mobile screen → YouTube, or PC → OBS ingest, plus presets & alerts.
+          Start streaming on YouTube or Twitch as usual — then paste your link here. We embed it; no
+          extra bandwidth on our side.
         </p>
       </div>
 
-      <CreatorStudioTools
-        title={title}
-        game={game}
-        resolution={resolution}
-        videoId={videoId}
-        onApplyPreset={(p) => {
-          setTitle(p.title);
-          setGame(p.game);
-          setResolution(p.resolution);
-          setStatus(`Applied preset “${p.name}”`);
-        }}
-      />
-
-      <div className="glass grid grid-cols-2 gap-1 rounded-2xl p-1">
-        <button
-          type="button"
-          onClick={() => {
-            setStudio("mobile");
-            setStatus("");
-            setError("");
-          }}
-          className={cn(
-            "flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-[11px] font-bold transition sm:text-xs",
-            studio === "mobile" ? "bg-white/10 text-white" : "text-muted hover:text-white"
+      {isLive && liveStream && (
+        <div className="space-y-3 rounded-2xl border border-crimson/40 bg-crimson/10 p-4">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-crimson opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-crimson" />
+            </span>
+            <p className="text-sm font-bold text-white">You&apos;re live on GamePlay Live</p>
+          </div>
+          <p className="text-xs text-muted">
+            {liveStream.game} · {liveStream.stream_title}
+          </p>
+          {watchHref && (
+            <Link href={watchHref} className="text-xs font-bold text-cyan underline-offset-2 hover:underline">
+              Open your watch page →
+            </Link>
           )}
-        >
-          <Smartphone size={14} />
-          Stream from Mobile Phone
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setStudio("pc");
-            setStatus("");
-            setError("");
-          }}
-          className={cn(
-            "flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-[11px] font-bold transition sm:text-xs",
-            studio === "pc" ? "bg-white/10 text-white" : "text-muted hover:text-white"
-          )}
-        >
-          <Monitor size={14} />
-          Stream from PC (OBS Studio)
-        </button>
-      </div>
-
-      <label className="block space-y-1.5">
-        <span className="text-xs font-bold uppercase tracking-wide text-muted">Stream title</span>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm outline-none focus:border-cyan/50"
-          placeholder='e.g. "BGMI Rank Push Live | Gameplay Live"'
-          maxLength={100}
-        />
-      </label>
-
-      <div className="space-y-2">
-        <span className="text-xs font-bold uppercase tracking-wide text-muted">Game</span>
-        <div className="flex flex-wrap gap-2">
-          {COMMUNITY_GAMES.map((g) => (
-            <button
-              key={g}
-              type="button"
-              onClick={() => setGame(g)}
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
-                game === g
-                  ? "border-crimson/60 bg-crimson/20 text-white"
-                  : "border-white/10 text-muted hover:text-white"
-              )}
-            >
-              {g === "Free Fire" ? "Free Fire MAX" : g}
-            </button>
-          ))}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void handleEndStream()}
+            className="w-full rounded-2xl bg-crimson py-3.5 text-sm font-bold text-white disabled:opacity-50"
+          >
+            End Stream
+          </button>
         </div>
-      </div>
+      )}
 
-      {studio === "pc" ? (
-        <PcObsPanel
-          title={title}
-          game={game}
-          onStatus={setStatus}
-          onError={setError}
-          onProRequired={onProRequired}
-        />
-      ) : (
+      {!isLive && (
         <>
-          {!nativeApp && (
-            <div className="rounded-2xl border border-cyan/30 bg-cyan/10 p-4">
-              <div className="flex items-start gap-3">
-                <Smartphone className="mt-0.5 shrink-0 text-cyan" size={20} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-white">
-                    Download Gameplay Live Android App to Stream Your Mobile Screen
-                  </p>
-                  <p className="mt-1 text-xs text-muted">
-                    Browser preview works for setup. Screen capture + game auto-launch need the native app.
-                  </p>
-                  <a
-                    href={APP_DOWNLOAD_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-cyan px-3 py-1.5 text-xs font-bold text-obsidian"
-                  >
-                    <Download size={14} />
-                    Get Android app
-                  </a>
-                </div>
-              </div>
+          <div className="space-y-2">
+            <span className="text-xs font-bold uppercase tracking-wide text-muted">Platform</span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setPlatform("youtube");
+                  setError("");
+                }}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-sm font-bold transition",
+                  platform === "youtube"
+                    ? "border-crimson/60 bg-crimson/20 text-white"
+                    : "border-white/10 text-muted hover:text-white"
+                )}
+              >
+                <Tv size={18} />
+                YouTube Live
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPlatform("twitch");
+                  setError("");
+                }}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-sm font-bold transition",
+                  platform === "twitch"
+                    ? "border-purple/60 bg-purple/20 text-white"
+                    : "border-white/10 text-muted hover:text-white"
+                )}
+              >
+                <Radio size={18} />
+                Twitch
+              </button>
             </div>
-          )}
-
-          <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-            <div className="flex items-center gap-2">
-              <Tv size={18} className="text-crimson" />
-              <p className="text-sm font-bold">YouTube connection</p>
-            </div>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void handleConnectYouTube()}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-crimson py-3.5 text-sm font-bold text-white disabled:opacity-50"
-            >
-              <Tv size={18} />
-              {youtubeReady ? "Reconnect YouTube & create broadcast" : "Connect YouTube with Google"}
-            </button>
-            {youtubeReady && (
-              <p className="text-xs text-cyan">
-                Broadcast ready{videoId ? ` · video ${videoId}` : ""}. Keys stay hidden.
-              </p>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setAdvancedOpen((v) => !v)}
-              className="flex w-full items-center justify-between rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-muted"
-            >
-              Advanced — paste stream key manually
-              <ChevronDown size={14} className={cn("transition", advancedOpen && "rotate-180")} />
-            </button>
-            {advancedOpen && (
-              <div className="space-y-2">
-                <p className="text-[11px] text-muted">
-                  Paste only the stream key (or full RTMPS URL). Base: rtmps://a.rtmp.youtube.com/live2
-                </p>
-                <input
-                  value={manualKey}
-                  onChange={(e) => {
-                    setManualKey(e.target.value);
-                    setMode("advanced");
-                  }}
-                  className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-xs outline-none"
-                  placeholder="xxxx-xxxx-xxxx-xxxx"
-                  autoComplete="off"
-                />
-              </div>
-            )}
           </div>
 
+          <label className="block space-y-1.5">
+            <span className="text-xs font-bold uppercase tracking-wide text-muted">
+              {platform === "youtube" ? "YouTube Live link" : "Twitch link or username"}
+            </span>
+            <div className="relative">
+              <Link2
+                size={16}
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
+              />
+              <input
+                value={streamLink}
+                onChange={(e) => {
+                  setStreamLink(e.target.value);
+                  setError("");
+                }}
+                className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-3 pl-10 pr-4 text-sm outline-none focus:border-cyan/50"
+                placeholder={
+                  platform === "youtube"
+                    ? "https://youtube.com/watch?v=… or youtube.com/live/…"
+                    : "twitch.tv/yourname or yourname"
+                }
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </div>
+            {preview && !preview.ok && streamLink.trim() && (
+              <p className="text-xs text-crimson">{preview.error}</p>
+            )}
+            {preview?.ok && (
+              <p className="text-xs text-cyan">
+                {preview.platform === "youtube"
+                  ? `Ready · video ${preview.videoId}`
+                  : `Ready · channel ${preview.channel}`}
+              </p>
+            )}
+          </label>
+
           <div className="space-y-2">
-            <span className="text-xs font-bold uppercase tracking-wide text-muted">Resolution & bitrate</span>
-            <div className="grid grid-cols-2 gap-2">
-              {(["720p60", "1080p30"] as StreamResolution[]).map((r) => (
+            <span className="text-xs font-bold uppercase tracking-wide text-muted">Game</span>
+            <div className="flex flex-wrap gap-2">
+              {COMMUNITY_GAMES.map((g) => (
                 <button
-                  key={r}
+                  key={g}
                   type="button"
-                  onClick={() => setResolution(r)}
+                  onClick={() => setGame(g)}
                   className={cn(
-                    "rounded-2xl border px-3 py-3 text-left text-xs font-semibold",
-                    resolution === r
-                      ? "border-cyan/50 bg-cyan/15 text-white"
-                      : "border-white/10 text-muted"
+                    "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+                    game === g
+                      ? "border-crimson/60 bg-crimson/20 text-white"
+                      : "border-white/10 text-muted hover:text-white"
                   )}
                 >
-                  {resolutionLabel(r)}
+                  {g === "Free Fire" ? "Free Fire MAX" : g}
                 </button>
               ))}
             </div>
-            <button
-              type="button"
-              onClick={() => setMicEnabled((v) => !v)}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold",
-                micEnabled ? "border-purple/40 bg-purple/15 text-white" : "border-white/10 text-muted"
-              )}
-            >
-              {micEnabled ? <Mic size={14} /> : <MicOff size={14} />}
-              Microphone {micEnabled ? "on" : "off"}
-            </button>
           </div>
+
+          <label className="block space-y-1.5">
+            <span className="text-xs font-bold uppercase tracking-wide text-muted">Stream title</span>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm outline-none focus:border-cyan/50"
+              placeholder="Short title for your card"
+              maxLength={100}
+            />
+          </label>
+
+          {platform === "youtube" && (
+            <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-[11px] leading-relaxed text-muted">
+              Tip: In YouTube Studio → Live → Settings, keep{" "}
+              <span className="font-semibold text-white/80">Allow embedding</span> on (it&apos;s on by
+              default) so fans can watch inside GamePlay Live.
+            </p>
+          )}
 
           <button
             type="button"
-            disabled={busy || !canLaunch}
-            onClick={() => void handleLaunch()}
+            disabled={busy || !canGoLive}
+            onClick={() => void handleGoLive()}
             className="btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-sm font-bold disabled:opacity-40"
           >
             <Radio size={18} />
-            Launch Game & Start Streaming
+            Go Live on GamePlay
           </button>
-
-          {liveStreamId && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void handleStop()}
-              className="w-full rounded-2xl border border-crimson/40 py-3 text-sm font-bold text-crimson"
-            >
-              End stream
-            </button>
-          )}
         </>
       )}
 

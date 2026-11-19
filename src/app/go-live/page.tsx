@@ -2,7 +2,8 @@ import { GoLiveClient } from "@/components/go-live/GoLiveClient";
 
 export const metadata = {
   title: "Go Live | GamePlay Live",
-  description: "Stream your mobile screen directly to YouTube — Pro creators only.",
+  description:
+    "Already live on YouTube or Twitch? Paste your link and appear on GamePlay Live instantly.",
 };
 
 export default function GoLivePage() {

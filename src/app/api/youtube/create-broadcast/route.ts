@@ -50,10 +50,6 @@ export async function POST(request: Request) {
   if (!profile || profile.is_banned) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  if (profile.subscription_tier !== "pro") {
-    return NextResponse.json({ error: "Pro subscription required", code: "PRO_REQUIRED" }, { status: 402 });
-  }
-
   const body = (await request.json().catch(() => ({}))) as Body;
   const title = (body.title || "Gameplay Live stream").trim().slice(0, 100);
   const game = (body.game || "Other").trim();

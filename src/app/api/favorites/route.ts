@@ -14,8 +14,8 @@ interface Body {
   id?: string;
 }
 
-function limitForTier(tier: string | undefined) {
-  return tier === "pro" ? FAVORITE_LIMITS.pro : FAVORITE_LIMITS.free;
+function limitForTier(_tier: string | undefined) {
+  return FAVORITE_LIMITS.free;
 }
 
 export async function GET() {
@@ -102,9 +102,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "SLOT_LIMIT",
-        message: isPro
-          ? `Maximum Limit Reached (${limit}/${limit}): Remove an existing gamer to add a new one.`
-          : `Slot Limit Reached (${limit}/${limit}): Remove an existing gamer to add a new one, or upgrade to Pro for up to ${FAVORITE_LIMITS.pro} Favorite Gamers.`,
+        message: `Maximum Limit Reached (${limit}/${limit}): Remove an existing gamer to add a new one.`,
         used,
         limit,
         is_pro: isPro,
