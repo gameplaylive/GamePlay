@@ -38,7 +38,6 @@ export async function PATCH(request: Request) {
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if ("subscription_tier" in body) patch.subscription_tier = body.subscription_tier;
   if ("role" in body) patch.role = body.role;
   if ("is_banned" in body) patch.is_banned = body.is_banned;
 

@@ -1,8 +1,14 @@
 import type { createServiceClient } from "@/lib/supabase/server";
+import { YOUTUBE_PIN_REFRESH_MAX_PER_RUN } from "@/lib/default-games";
+import { notifyFollowersCreatorWentLive } from "@/lib/favorite-live-notify";
 import { getAppSettingsFull } from "@/lib/settings";
 import { twitchFetch } from "@/lib/twitch";
 import { youtubeFetch } from "@/lib/youtube";
-import { recordLightUnits } from "@/lib/youtube-quota";
+import {
+  YOUTUBE_PIN_REFRESH_COST,
+  canSpendUnits,
+  recordLightUnits,
+} from "@/lib/youtube-quota";
 import type { CreatorRecentVideo } from "@/lib/types";
 
 type Service = NonNullable<ReturnType<typeof createServiceClient>>;
@@ -129,6 +135,7 @@ export async function refreshYoutubeCreator(
     }
 
     const latest = recent[0];
+    const previouslyLive = Boolean(creator.is_live);
     await supabase
       .from("tracked_creators")
       .update({
@@ -145,6 +152,22 @@ export async function refreshYoutubeCreator(
         updated_at: now,
       })
       .eq("id", creator.id);
+
+    if (liveId) {
+      await notifyFollowersCreatorWentLive(
+        supabase,
+        {
+          id: String(creator.id),
+          platform: "youtube",
+          channel_name: creator.channel_name as string | null,
+          channel_id: channelId,
+          live_video_id: liveId,
+          live_title: liveTitle,
+          live_thumbnail: liveThumb,
+        },
+        previouslyLive
+      );
+    }
 
     await recordLightUnits(units);
     return { ok: true, units };
@@ -224,18 +247,23 @@ export async function refreshTwitchCreator(
     }
 
     const latest = recent[0];
+    const previouslyLive = Boolean(creator.is_live);
+    const liveVideoId = liveStream ? String(liveStream.user_login || login) : null;
+    const liveTitle = liveStream ? String(liveStream.title || "") : null;
+    const liveThumb = liveStream
+      ? String(liveStream.thumbnail_url || "")
+          .replace("{width}", "1280")
+          .replace("{height}", "720")
+      : null;
+
     await supabase
       .from("tracked_creators")
       .update({
         is_live: Boolean(liveStream),
-        live_title: liveStream ? String(liveStream.title || "") : null,
-        live_video_id: liveStream ? String(liveStream.user_login || login) : null,
+        live_title: liveTitle,
+        live_video_id: liveVideoId,
         live_viewer_count: liveStream ? Number(liveStream.viewer_count || 0) : 0,
-        live_thumbnail: liveStream
-          ? String(liveStream.thumbnail_url || "")
-              .replace("{width}", "1280")
-              .replace("{height}", "720")
-          : null,
+        live_thumbnail: liveThumb,
         latest_video_id: latest?.id || null,
         latest_video_title: latest?.title || null,
         latest_video_thumbnail: latest?.thumbnail || null,
@@ -244,6 +272,23 @@ export async function refreshTwitchCreator(
         updated_at: now,
       })
       .eq("id", creator.id);
+
+    if (liveStream && liveVideoId) {
+      await notifyFollowersCreatorWentLive(
+        supabase,
+        {
+          id: String(creator.id),
+          platform: "twitch",
+          channel_name: creator.channel_name as string | null,
+          channel_id: userId || String(creator.channel_id || ""),
+          channel_login: login,
+          live_video_id: liveVideoId,
+          live_title: liveTitle,
+          live_thumbnail: liveThumb,
+        },
+        previouslyLive
+      );
+    }
 
     return { ok: true };
   } catch (e) {
@@ -264,16 +309,38 @@ export async function refreshPinnedCreators(
       .from("tracked_creators")
       .select("*")
       .eq("platform", "youtube")
-      .gt("pin_count", 0);
+      .gt("pin_count", 0)
+      .order("last_checked_at", { ascending: true, nullsFirst: true });
 
     let checked = 0;
+    let skippedFresh = 0;
+    let skippedBudget = 0;
     let units = 0;
-    for (const c of creators || []) {
+    const list = creators || [];
+
+    for (const c of list) {
+      if (checked >= YOUTUBE_PIN_REFRESH_MAX_PER_RUN) break;
+      if (!isCreatorCacheStale(c.last_checked_at as string | null)) {
+        skippedFresh += 1;
+        continue;
+      }
+      const spend = await canSpendUnits(YOUTUBE_PIN_REFRESH_COST);
+      if (!spend.ok) {
+        skippedBudget += 1;
+        break;
+      }
       const r = await refreshYoutubeCreator(supabase, c, settings.youtube_api_key);
       if (r.ok) checked += 1;
       units += r.units;
     }
-    out.youtube = { checked, units, total: creators?.length || 0 };
+    out.youtube = {
+      checked,
+      units,
+      total: list.length,
+      skipped_fresh: skippedFresh,
+      skipped_budget: skippedBudget,
+      max_per_run: YOUTUBE_PIN_REFRESH_MAX_PER_RUN,
+    };
   }
 
   if (platform === "twitch" || platform === "all") {

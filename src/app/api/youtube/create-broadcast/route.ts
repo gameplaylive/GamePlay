@@ -43,7 +43,7 @@ export async function POST(request: Request) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("subscription_tier, is_banned, full_name")
+    .select("is_banned, full_name")
     .eq("id", user.id)
     .maybeSingle();
 

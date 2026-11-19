@@ -288,7 +288,7 @@ function SubscribersTable({ rows }: { rows: ProSubscriberRow[] }) {
         <p className="text-xs text-muted">{rows.length} subscriber{rows.length === 1 ? "" : "s"}</p>
       </div>
       <LeaderTable
-        columns={["Creator", "Cashfree ID", "Provider", "Expires", "Status"]}
+        columns={["Creator", "Legacy sub ID", "Provider", "Expires", "Status"]}
         empty="No Pro subscribers yet."
         rows={rows.map((s) => [
           <div key={s.id}>

@@ -92,7 +92,7 @@ export async function POST(request: Request) {
 
   const { data: profile } = await service
     .from("profiles")
-    .select("full_name, email, subscription_tier, is_banned")
+    .select("full_name, email, is_banned")
     .eq("id", cred.user_id)
     .maybeSingle();
 

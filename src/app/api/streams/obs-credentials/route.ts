@@ -41,7 +41,7 @@ export async function GET() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("subscription_tier, is_banned")
+    .select("is_banned")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("subscription_tier, is_banned")
+    .select("is_banned")
     .eq("id", user.id)
     .maybeSingle();
 

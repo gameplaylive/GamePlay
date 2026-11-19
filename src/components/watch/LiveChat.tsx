@@ -4,7 +4,6 @@ import { FormEvent, useEffect, useState } from "react";
 import { useApp } from "@/components/providers/AppProviders";
 import { createClient } from "@/lib/supabase/client";
 import type { ChatMessage } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 export function LiveChat({ streamId }: { streamId: string }) {
   const { profile, signInWithGoogle, demoMode } = useApp();
@@ -74,7 +73,7 @@ export function LiveChat({ streamId }: { streamId: string }) {
       user_id: profile.id,
       user_name: profile.full_name || "Player",
       user_avatar: profile.avatar_url || "",
-      is_pro: profile.subscription_tier === "pro",
+      is_pro: false,
       message: text.trim(),
       created_at: new Date().toISOString(),
     };
@@ -89,7 +88,7 @@ export function LiveChat({ streamId }: { streamId: string }) {
       user_id: profile.id,
       user_name: payload.user_name,
       user_avatar: payload.user_avatar,
-      is_pro: payload.is_pro,
+      is_pro: false,
       message: payload.message,
     });
   }
@@ -102,12 +101,7 @@ export function LiveChat({ streamId }: { streamId: string }) {
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
         {messages.map((m) => (
           <div key={m.id} className="text-sm">
-            <span className={cn("mr-2 font-bold", m.is_pro ? "text-gold" : "text-cyan")}>
-              {m.user_name}
-              {m.is_pro && (
-                <span className="ml-1 rounded bg-gold/20 px-1 text-[9px] font-black text-gold">PRO</span>
-              )}
-            </span>
+            <span className="mr-2 font-bold text-cyan">{m.user_name}</span>
             <span className="text-white/90">{m.message}</span>
           </div>
         ))}

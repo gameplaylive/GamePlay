@@ -23,10 +23,10 @@ export default function RefundsPage() {
       <h2>2. Legacy charges</h2>
       <ul>
         <li>
-          If you were previously billed for Creator Pro via Cashfree and need help with a historical
+          If you were previously billed for a legacy subscription and need help with a historical
           charge, email{" "}
-          <a className="text-cyan" href="mailto:gameliveapp@gmail.com">
-            gameliveapp@gmail.com
+          <a className="text-cyan" href="mailto:gameplayliveapp@gmail.com">
+            gameplayliveapp@gmail.com
           </a>{" "}
           with your Google account email and any payment reference.
         </li>
@@ -34,8 +34,8 @@ export default function RefundsPage() {
       <h2>3. Contact</h2>
       <p>
         Questions:{" "}
-        <a className="text-cyan" href="mailto:gameliveapp@gmail.com">
-          gameliveapp@gmail.com
+        <a className="text-cyan" href="mailto:gameplayliveapp@gmail.com">
+          gameplayliveapp@gmail.com
         </a>
         .
       </p>

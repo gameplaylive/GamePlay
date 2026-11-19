@@ -25,8 +25,12 @@ export async function getAppSettingsFull(): Promise<AppSettings> {
     pro_plan_name: row?.pro_plan_name || MOCK_SETTINGS.pro_plan_name,
     pro_plan_description: row?.pro_plan_description || MOCK_SETTINGS.pro_plan_description,
     adsense_enabled: row?.adsense_enabled ?? true,
-    adsense_publisher_id: row?.adsense_publisher_id || "",
-    adsense_slot_id: row?.adsense_slot_id || "",
+    adsense_publisher_id:
+      row?.adsense_publisher_id ||
+      process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID ||
+      "",
+    adsense_slot_id:
+      row?.adsense_slot_id || process.env.NEXT_PUBLIC_ADSENSE_SLOT_ID || "",
     admob_enabled: row?.admob_enabled ?? true,
     admob_app_id: row?.admob_app_id || "",
     admob_banner_unit_id: row?.admob_banner_unit_id || "",

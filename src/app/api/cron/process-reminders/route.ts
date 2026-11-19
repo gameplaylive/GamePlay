@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { sendFcmToMany } from "@/lib/fcm-server";
 import { getAppUrl } from "@/lib/utils";
 import type { EventReminder } from "@/lib/types";
 
@@ -135,7 +136,51 @@ export async function GET(request: Request) {
     sent += 1;
   }
 
-  return NextResponse.json({ ok: true, processed: sent, scanned: rows?.length || 0 });
+  // Server-backed tournament "Notify Me" → FCM when start_time has arrived
+  const { data: tourneyRows } = await service
+    .from("tournament_reminders")
+    .select("*")
+    .eq("notified", false)
+    .limit(500);
+
+  let tournamentSent = 0;
+  for (const tr of tourneyRows || []) {
+    const start = tr.start_time ? new Date(String(tr.start_time)).getTime() : NaN;
+    if (!Number.isFinite(start) || start > Date.now()) continue;
+
+    const title = "Tournament LIVE";
+    const body = `${tr.tournament_title || "Your tournament"} is starting — tap to watch.`;
+    const path = String(tr.watch_path || "/tournaments");
+    const link = path.startsWith("http") ? path : `${appUrl}${path}`;
+
+    await service.from("in_app_notifications").insert({
+      user_id: tr.user_id,
+      title,
+      body,
+      link_url: path,
+      is_read: false,
+    });
+
+    const { data: devices } = await service
+      .from("push_devices")
+      .select("token")
+      .eq("user_id", tr.user_id)
+      .eq("enabled", true);
+    const tokens = (devices || []).map((d) => String(d.token)).filter(Boolean);
+    if (tokens.length) {
+      await sendFcmToMany(tokens, { title, body, url: link });
+    }
+
+    await service.from("tournament_reminders").update({ notified: true }).eq("id", tr.id);
+    tournamentSent += 1;
+  }
+
+  return NextResponse.json({
+    ok: true,
+    processed: sent,
+    tournament_processed: tournamentSent,
+    scanned: rows?.length || 0,
+  });
 }
 
 export async function POST(request: Request) {

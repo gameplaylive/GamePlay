@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { useApp } from "@/components/providers/AppProviders";
 import { BrandLogo } from "@/components/BrandLogo";
+import { DEFAULT_GAMES } from "@/lib/default-games";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +12,24 @@ export function OnboardingModal() {
   const { games, profile, updateProfileLocal } = useApp();
   const [selected, setSelected] = useState<string[]>(profile?.favorite_games || []);
   const [saving, setSaving] = useState(false);
+
+  const pickGames = (() => {
+    const bySlug = new Map(games.map((g) => [g.slug, g]));
+    for (const g of DEFAULT_GAMES) {
+      if (!bySlug.has(g.slug)) {
+        bySlug.set(g.slug, {
+          id: g.id,
+          title: g.title,
+          slug: g.slug,
+          cover_image: g.cover_image,
+          twitch_game_id: g.twitch_game_id,
+          youtube_query: g.youtube_query,
+          is_active: true,
+        });
+      }
+    }
+    return [...bySlug.values()].sort((a, b) => a.title.localeCompare(b.title));
+  })();
 
   function toggle(slug: string) {
     setSelected((prev) => (prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]));
@@ -37,8 +56,9 @@ export function OnboardingModal() {
         <h2 className="font-display text-3xl font-bold">Pick your games</h2>
         <p className="mt-2 text-sm text-muted">Tap one or more titles. We&apos;ll personalize your Live & Latest feed.</p>
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {games.map((game) => {
+          {pickGames.map((game) => {
             const active = selected.includes(game.slug);
+            const label = game.slug === "euro-truck-simulator-2" ? "ETS2" : game.title;
             return (
               <button
                 key={game.id}
@@ -50,9 +70,9 @@ export function OnboardingModal() {
                 )}
               >
                 <div className="relative aspect-[3/4]">
-                  <Image src={game.cover_image} alt={game.title} fill className="object-cover" unoptimized />
+                  <Image src={game.cover_image} alt={label} fill className="object-cover" unoptimized />
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                  <span className="absolute bottom-2 left-2 right-2 font-display text-sm font-bold">{game.title}</span>
+                  <span className="absolute bottom-2 left-2 right-2 font-display text-sm font-bold">{label}</span>
                   {active && (
                     <span className="absolute right-2 top-2 rounded-full bg-cyan px-2 py-0.5 text-[10px] font-black text-obsidian">
                       PICKED

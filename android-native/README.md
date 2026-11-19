@@ -9,7 +9,7 @@ Native shell that hosts the Next.js UI, encodes the phone screen → **YouTube R
 | Chrome / laptop / mobile browser / PWA | **AdSense** (`AdBanner.tsx`) |
 | This Android WebView app | **AdMob** sticky banner under the WebView |
 
-AdSense is **not** loaded inside the WebView (policy). The web app calls `AndroidStreamBridge.setBannerAdsEnabled(true|false)` from ads settings (Creator Pro does not hide AdMob — banners stay outside the player).
+AdSense is **not** loaded inside the WebView (policy). The web app calls `AndroidStreamBridge.setBannerAdsEnabled(true|false)` from ads settings. AdMob banners stay outside the player.
 
 ### AdMob setup (before Play Store)
 
@@ -20,6 +20,8 @@ AdSense is **not** loaded inside the WebView (policy). The web app calls `Androi
 4. Replace the **sample** banner unit in `res/values/strings.xml`:
    - `admob_banner_unit_id` → `ca-app-pub-xxxxxxxx/yyyyyyyyyy`
 5. Keep Google’s sample IDs while developing (they always fill with test ads).
+6. **UMP / Privacy & messaging:** in AdMob → Privacy & messaging, create a GDPR message linked to this app. The app gathers consent via `user-messaging-platform` before `MobileAds.initialize` / `loadAd`.
+7. Play targets **API 36** (`compileSdk` / `targetSdk`).
 
 ## Bridge (JS → Kotlin)
 
@@ -66,3 +68,15 @@ Game packages (auto-launch after MediaProjection consent):
 2. Set `MainActivity.WEB_URL` / `API_BASE` to your deployed host.
 3. Sync Gradle (JitPack for RootEncoder + Google Play services ads).
 4. Build a debug APK and set `NEXT_PUBLIC_ANDROID_APK_URL` on the web app.
+
+## Release signing (upload keystore)
+
+Upload keystore lives **outside** this repo (do not commit):
+
+- `~/Documents/GamePlayLive-signing/gameplay-live-upload.jks`
+- `~/Documents/GamePlayLive-signing/keystore.properties` (passwords + alias)
+- Local Gradle copy: `android-native/keystore.properties` (gitignored)
+
+Alias: `gameplay-upload`. Release builds pick this up automatically via `signingConfigs.release`.
+
+After the first Play Console AAB upload, copy **Play App Signing → App signing key → SHA-256** into `public/.well-known/assetlinks.json` (that fingerprint is Google’s, not the upload key).

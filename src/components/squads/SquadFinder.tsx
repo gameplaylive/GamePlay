@@ -1,11 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Copy, Mic, MicOff, Plus, Users, X } from "lucide-react";
+import { Check, Copy, LogOut, Mic, MicOff, Plus, Users, X } from "lucide-react";
 import { useApp } from "@/components/providers/AppProviders";
 import {
-  FREE_LIMIT_MESSAGE,
-  FREE_SQUAD_POSTS_PER_DAY,
   SQUAD_GAMES,
   SQUAD_MODES,
   SQUAD_NOTE_MAX,
@@ -20,9 +18,8 @@ export function SquadFinder() {
   const [gameFilter, setGameFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [isPro, setIsPro] = useState(false);
-  const [freePostsToday, setFreePostsToday] = useState(0);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [nowTick, setNowTick] = useState(0);
 
   const load = useCallback(async () => {
@@ -31,8 +28,6 @@ export function SquadFinder() {
       const res = await fetch(`/api/squads${qs}`, { cache: "no-store" });
       const data = await res.json();
       if (Array.isArray(data.posts)) setPosts(data.posts as SquadPost[]);
-      setIsPro(true);
-      setFreePostsToday(Number(data.free_posts_today) || 0);
     } catch {
       // keep last
     } finally {
@@ -49,10 +44,8 @@ export function SquadFinder() {
     return () => window.clearInterval(t);
   }, []);
 
-  const freeRemaining = Math.max(0, FREE_SQUAD_POSTS_PER_DAY - freePostsToday);
-  const quotaLabel = "Free for all signed-in players · posts auto-expire in 3h";
-
-  async function copyId(post: SquadPost) {
+  async function copyUid(post: SquadPost) {
+    if (!post.in_game_id) return;
     try {
       await navigator.clipboard.writeText(post.in_game_id);
       setCopiedId(post.id);
@@ -66,6 +59,27 @@ export function SquadFinder() {
     if (!profile) return;
     const res = await fetch(`/api/squads?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     if (res.ok) setPosts((prev) => prev.filter((p) => p.id !== id));
+  }
+
+  async function joinOrLeave(post: SquadPost, action: "join" | "leave") {
+    if (!profile && !demoMode) {
+      void signInWithGoogle("/?focus=squads");
+      return;
+    }
+    setBusyId(post.id);
+    try {
+      const res = await fetch("/api/squads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, id: post.id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.post) {
+        setPosts((prev) => prev.map((p) => (p.id === post.id ? (data.post as SquadPost) : p)));
+      }
+    } finally {
+      setBusyId(null);
+    }
   }
 
   function openPostModal() {
@@ -114,14 +128,14 @@ export function SquadFinder() {
               gameFilter === g ? "chip-active" : "border-border-glow bg-white/[0.03] text-muted"
             )}
           >
-            {g}
+            {g === "Euro Truck Simulator 2" ? "ETS2" : g}
           </button>
         ))}
       </div>
 
       <div className="space-y-2 px-3 pb-3 sm:px-4">
         <p className="text-[10px] text-muted">
-          Looking for teammates · in-game ID / room code only · posts auto-expire in 3h · {quotaLabel}
+          1-tap Join · UID reveals after you join · slots fill until FULL · posts expire in 3h
         </p>
 
         {loading && <p className="py-4 text-center text-xs text-muted">Loading squads…</p>}
@@ -140,70 +154,106 @@ export function SquadFinder() {
         )}
 
         <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide">
-          {activePosts.map((post) => (
-            <article
-              key={post.id}
-              className="flex w-[240px] shrink-0 flex-col rounded-xl border border-white/8 bg-black/30 p-2.5 backdrop-blur-sm"
-            >
-              <div className="mb-1.5 flex items-center justify-between gap-2">
-                <span className="rounded bg-cyan/15 px-1.5 py-0.5 text-[8px] font-bold tracking-wide text-cyan">
-                  {post.game}
-                </span>
-              </div>
-              <p className="text-[12px] font-semibold text-white">{post.mode}</p>
-              <p className="mt-0.5 truncate text-[10px] text-muted">
-                {post.creator_name || "Player"}
-              </p>
-              <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-muted">
-                {post.mic_required ? (
-                  <>
-                    <Mic size={12} className="text-emerald-400" /> Mic ON
-                  </>
-                ) : (
-                  <>
-                    <MicOff size={12} className="text-muted" /> Mic optional
-                  </>
-                )}
-              </div>
-              {post.note ? (
-                <p className="mt-1 line-clamp-2 text-[10px] leading-snug text-white/70">{post.note}</p>
-              ) : null}
-              <p className="mt-1.5 text-[9px] text-cyan/80">{formatExpiresIn(post.expires_at)}</p>
-              <button
-                type="button"
-                onClick={() => void copyId(post)}
-                className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-cyan/40 bg-cyan/10 px-2 py-1.5 text-[10px] font-bold text-cyan hover:bg-cyan/20"
+          {activePosts.map((post) => {
+            const isHost = profile?.id === post.user_id;
+            return (
+              <article
+                key={post.id}
+                className="flex w-[240px] shrink-0 flex-col rounded-xl border border-white/8 bg-black/30 p-2.5 backdrop-blur-sm"
               >
-                {copiedId === post.id ? (
-                  <>
-                    <Check size={12} /> Copied
-                  </>
-                ) : (
-                  <>
-                    <Copy size={12} /> Copy ID · {post.in_game_id}
-                  </>
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <span className="rounded bg-cyan/15 px-1.5 py-0.5 text-[8px] font-bold tracking-wide text-cyan">
+                    {post.game}
+                  </span>
+                  <span
+                    className={cn(
+                      "rounded px-1.5 py-0.5 text-[8px] font-bold",
+                      post.is_full ? "bg-crimson/20 text-crimson" : "bg-gold/15 text-gold"
+                    )}
+                  >
+                    {post.is_full ? "FULL" : `${post.slots_filled}/${post.max_slots}`}
+                  </span>
+                </div>
+                <p className="text-[12px] font-semibold text-white">{post.mode}</p>
+                <p className="mt-0.5 truncate text-[10px] text-muted">{post.creator_name || "Player"}</p>
+                <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-muted">
+                  {post.mic_required ? (
+                    <>
+                      <Mic size={12} className="text-emerald-400" /> Mic ON
+                    </>
+                  ) : (
+                    <>
+                      <MicOff size={12} className="text-muted" /> Mic optional
+                    </>
+                  )}
+                </div>
+                {post.note ? (
+                  <p className="mt-1 line-clamp-2 text-[10px] leading-snug text-white/70">{post.note}</p>
+                ) : null}
+                <p className="mt-1.5 text-[9px] text-cyan/80">{formatExpiresIn(post.expires_at)}</p>
+
+                {post.can_see_uid && post.in_game_id ? (
+                  <button
+                    type="button"
+                    onClick={() => void copyUid(post)}
+                    className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-cyan/40 bg-cyan/10 px-2 py-1.5 text-[10px] font-bold text-cyan hover:bg-cyan/20"
+                  >
+                    {copiedId === post.id ? (
+                      <>
+                        <Check size={12} /> Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={12} /> Copy UID · {post.in_game_id}
+                      </>
+                    )}
+                  </button>
+                ) : null}
+
+                {!isHost && !post.i_joined && !post.is_full && (
+                  <button
+                    type="button"
+                    disabled={busyId === post.id}
+                    onClick={() => void joinOrLeave(post, "join")}
+                    className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-gold/40 bg-gold/15 px-2 py-1.5 text-[10px] font-bold text-gold disabled:opacity-60"
+                  >
+                    <Users size={12} /> Join Squad
+                  </button>
                 )}
-              </button>
-              {profile?.id === post.user_id && (
-                <button
-                  type="button"
-                  onClick={() => void removePost(post.id)}
-                  className="mt-1 text-[9px] font-semibold text-muted hover:text-crimson"
-                >
-                  Remove my post
-                </button>
-              )}
-            </article>
-          ))}
+
+                {!isHost && post.i_joined && (
+                  <button
+                    type="button"
+                    disabled={busyId === post.id}
+                    onClick={() => void joinOrLeave(post, "leave")}
+                    className="mt-1 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-white/15 px-2 py-1.5 text-[10px] font-bold text-muted hover:text-crimson disabled:opacity-60"
+                  >
+                    <LogOut size={12} /> Leave Squad
+                  </button>
+                )}
+
+                {!isHost && post.is_full && !post.i_joined && (
+                  <p className="mt-2 text-center text-[9px] font-bold text-crimson">Squad FULL</p>
+                )}
+
+                {isHost && (
+                  <button
+                    type="button"
+                    onClick={() => void removePost(post.id)}
+                    className="mt-1 text-[9px] font-semibold text-muted hover:text-crimson"
+                  >
+                    Remove my post
+                  </button>
+                )}
+              </article>
+            );
+          })}
         </div>
       </div>
 
       {modalOpen && (
         <PostSquadModal
-          isPro={isPro}
-          freeRemaining={freeRemaining}
           onClose={() => setModalOpen(false)}
-          onUpgrade={() => setModalOpen(false)}
           onCreated={(post) => {
             setPosts((prev) => [post, ...prev.filter((p) => p.id !== post.id)]);
             setModalOpen(false);
@@ -215,16 +265,10 @@ export function SquadFinder() {
 }
 
 function PostSquadModal({
-  isPro,
-  freeRemaining,
   onClose,
-  onUpgrade,
   onCreated,
 }: {
-  isPro: boolean;
-  freeRemaining: number;
   onClose: () => void;
-  onUpgrade: () => void;
   onCreated: (post: SquadPost) => void;
 }) {
   const [game, setGame] = useState<string>(SQUAD_GAMES[0]);
@@ -237,10 +281,6 @@ function PostSquadModal({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (false && !isPro && freeRemaining <= 0) {
-      setError(FREE_LIMIT_MESSAGE);
-      return;
-    }
     setBusy(true);
     setError("");
     try {
@@ -256,10 +296,6 @@ function PostSquadModal({
         }),
       });
       const data = await res.json();
-      if (res.status === 429) {
-        setError(data.error || FREE_LIMIT_MESSAGE);
-        return;
-      }
       if (!res.ok) {
         setError(data.error || "Could not post squad");
         return;
@@ -279,7 +315,7 @@ function PostSquadModal({
           <div>
             <h3 className="font-display text-xl font-bold text-white">Post Squad</h3>
             <p className="mt-1 text-[11px] text-muted">
-              Free for all signed-in players · posts auto-expire in 3 hours
+              Free for all signed-in players · UID stays hidden until teammates join
             </p>
           </div>
           <button type="button" onClick={onClose} className="rounded-full p-1 text-muted hover:text-white">
@@ -297,7 +333,7 @@ function PostSquadModal({
             >
               {SQUAD_GAMES.map((g) => (
                 <option key={g} value={g}>
-                  {g}
+                  {g === "Euro Truck Simulator 2" ? "Euro Truck Simulator 2 (ETS2)" : g}
                 </option>
               ))}
             </select>
@@ -356,8 +392,8 @@ function PostSquadModal({
           </label>
 
           <p className="text-[10px] leading-relaxed text-muted">
-            Safety: no emails, phone numbers, WhatsApp, Telegram, or Discord links — teammates copy
-            your in-game ID only.
+            Safety: no emails, phone numbers, WhatsApp, Telegram, or Discord links. Teammates join
+            first, then see your UID.
           </p>
 
           {error && (

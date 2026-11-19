@@ -231,3 +231,81 @@ a {
 .pro-cta-glow {
   animation: pro-cta-pulse 2.4s ease-in-out infinite;
 }
+
+/* —— Splash (cold start) —— */
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  background: #000000;
+  pointer-events: none;
+  animation: splash-fade-in 0.45s ease-out both;
+}
+
+.splash-screen__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: splash-logo-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.splash-screen__logo {
+  width: min(220px, 58vw);
+  height: auto;
+  max-height: 74px;
+  object-fit: contain;
+  animation: splash-logo-breathe 2s ease-in-out 0.7s infinite;
+}
+
+.splash-screen--out {
+  animation: splash-fade-out 0.48s ease-in forwards;
+}
+
+@keyframes splash-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes splash-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes splash-logo-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.88) translateY(8px);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.03) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes splash-logo-breathe {
+  0%,
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 0.92;
+    filter: brightness(1.12);
+  }
+}

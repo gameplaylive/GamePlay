@@ -14,24 +14,16 @@ interface Body {
   id?: string;
 }
 
-function limitForTier(_tier: string | undefined) {
-  return FAVORITE_LIMITS.free;
-}
+const FAV_LIMIT = FAVORITE_LIMITS.free;
 
 export async function GET() {
   const supabase = await createClient();
-  if (!supabase) return NextResponse.json({ favorites: [], limit: FAVORITE_LIMITS.free, used: 0 });
+  if (!supabase) return NextResponse.json({ favorites: [], limit: FAV_LIMIT, used: 0 });
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("subscription_tier")
-    .eq("id", user.id)
-    .maybeSingle();
 
   const { data: favorites } = await supabase
     .from("user_favorites")
@@ -39,12 +31,10 @@ export async function GET() {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  const limit = limitForTier(profile?.subscription_tier);
   return NextResponse.json({
     favorites: favorites || [],
     used: favorites?.length || 0,
-    limit,
-    is_pro: profile?.subscription_tier === "pro",
+    limit: FAV_LIMIT,
   });
 }
 
@@ -74,7 +64,7 @@ export async function POST(request: Request) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("subscription_tier, is_banned")
+    .select("is_banned")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -82,8 +72,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const limit = limitForTier(profile.subscription_tier);
-  const isPro = profile.subscription_tier === "pro";
+  const limit = FAV_LIMIT;
 
   const { data: existing, count } = await supabase
     .from("user_favorites")
@@ -94,7 +83,7 @@ export async function POST(request: Request) {
     (f) => f.platform === platform && f.channel_id_or_username === channelId
   );
   if (already) {
-    return NextResponse.json({ favorite: already, used: count || existing?.length || 0, limit, is_pro: isPro });
+    return NextResponse.json({ favorite: already, used: count || existing?.length || 0, limit });
   }
 
   const used = count ?? existing?.length ?? 0;
@@ -105,7 +94,6 @@ export async function POST(request: Request) {
         message: `Maximum Limit Reached (${limit}/${limit}): Remove an existing gamer to add a new one.`,
         used,
         limit,
-        is_pro: isPro,
       },
       { status: 403 }
     );
@@ -141,7 +129,6 @@ export async function POST(request: Request) {
     favorite: fav,
     used: used + 1,
     limit,
-    is_pro: isPro,
   });
 }
 
@@ -194,11 +181,6 @@ export async function DELETE(request: Request) {
     }
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("subscription_tier")
-    .eq("id", user.id)
-    .maybeSingle();
   const { count } = await supabase
     .from("user_favorites")
     .select("*", { count: "exact", head: true })
@@ -207,7 +189,7 @@ export async function DELETE(request: Request) {
   return NextResponse.json({
     ok: true,
     used: count || 0,
-    limit: limitForTier(profile?.subscription_tier),
+    limit: FAV_LIMIT,
   });
 }
 

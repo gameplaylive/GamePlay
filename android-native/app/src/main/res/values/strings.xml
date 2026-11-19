@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="app_name">Gameplay Live</string>
+  <string name="privacy_policy_url">https://gameplaylive.live/privacy-policy</string>
+  <string name="terms_url">https://gameplaylive.live/terms</string>
 
   <!--
     AdMob BANNER ad unit ID (used by activity_main.xml AdView).
@@ -16,5 +18,5 @@
 
     Do NOT ship a Play release still using ca-app-pub-3940256099942544/6300978111.
   -->
-  <string name="admob_banner_unit_id">ca-app-pub-9916342177645213/3767011618</string>
+  <string name="admob_banner_unit_id">ca-app-pub-5165582915599822/2541027023</string>
 </resources>

@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.gameplaylive",
+      "sha256_cert_fingerprints": [
+        "B4:9B:7E:B1:B8:2E:49:44:E6:96:2C:E9:20:10:42:65:BE:22:92:34:7F:F1:60:EB:10:C6:E0:44:1C:FC:3D:96",
+        "DB:D1:79:23:F3:E7:40:B3:90:35:7A:0B:E3:74:B6:8E:E6:16:21:0F:D8:5C:16:0C:F6:47:3F:F7:2B:8A:79:B1"
+      ]
+    }
+  }
+]

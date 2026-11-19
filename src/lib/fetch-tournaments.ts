@@ -3,6 +3,12 @@ import { getAppSettingsFull } from "@/lib/settings";
 import { twitchFetch } from "@/lib/twitch";
 import { youtubeFetch } from "@/lib/youtube";
 import {
+  canSpendSearchList,
+  canSpendUnits,
+  recordLightUnits,
+  recordSearchListCall,
+} from "@/lib/youtube-quota";
+import {
   mapCustomTournament,
   mapPandaScoreMatch,
   parseStreamUrl,
@@ -19,23 +25,28 @@ async function detectChannelLive(
 
   try {
     if (platform === "youtube" && settings.youtube_api_key) {
-      // Prefer channel live search when channelId looks like a UC… id
-      if (channelId.startsWith("UC")) {
-        const data = await youtubeFetch(
-          `/search?part=snippet&channelId=${encodeURIComponent(channelId)}&eventType=live&type=video&maxResults=1`,
-          settings.youtube_api_key
-        );
-        const item = data.items?.[0];
-        if (item?.id?.videoId) return { live: true, videoId: item.id.videoId };
-      } else if (/^[\w-]{11}$/.test(channelId)) {
-        // Treat as video id — check liveBroadcastContent
+      // Prefer cheap videos.list when we already have a video id
+      if (/^[\w-]{11}$/.test(channelId) && !channelId.startsWith("UC")) {
+        const light = await canSpendUnits(1);
+        if (!light.ok) return { live: false };
         const data = await youtubeFetch(
           `/videos?part=snippet,liveStreamingDetails&id=${encodeURIComponent(channelId)}`,
           settings.youtube_api_key
         );
+        await recordLightUnits(1);
         const item = data.items?.[0];
         const liveState = item?.snippet?.liveBroadcastContent;
         if (liveState === "live") return { live: true, videoId: channelId };
+      } else if (channelId.startsWith("UC")) {
+        const spend = await canSpendSearchList();
+        if (!spend.ok) return { live: false };
+        const data = await youtubeFetch(
+          `/search?part=snippet&channelId=${encodeURIComponent(channelId)}&eventType=live&type=video&maxResults=1`,
+          settings.youtube_api_key
+        );
+        await recordSearchListCall(1);
+        const item = data.items?.[0];
+        if (item?.id?.videoId) return { live: true, videoId: item.id.videoId };
       }
     }
 

@@ -13,7 +13,7 @@ function authorized(request: Request) {
 
 /**
  * Shared live + recent-video cache for pinned creators (My Gamers).
- * Runs on Netlify ~every 10m — fetches recent uploads/VODs so profiles have content when offline.
+ * Cloudflare cron ~every 10m — refreshes live status + recent VODs; fires FCM on offline→live.
  */
 export async function GET(request: Request) {
   if (!authorized(request)) {

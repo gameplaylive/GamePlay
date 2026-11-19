@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { getAppSettingsFull } from "@/lib/settings";
 import { twitchFetch } from "@/lib/twitch";
 import { youtubeFetch } from "@/lib/youtube";
+import { canSpendUnits, recordLightUnits } from "@/lib/youtube-quota";
 
 export const dynamic = "force-dynamic";
 
@@ -22,29 +23,33 @@ export async function GET(request: Request) {
 
   if (settings.youtube_api_key) {
     try {
-      const data = await youtubeFetch(
-        `/videos?part=snippet,statistics&chart=mostPopular&videoCategoryId=20&maxResults=20&regionCode=US`,
-        settings.youtube_api_key
-      );
-      for (const item of data.items || []) {
-        rows.push({
-          game_id: null,
-          game_slug: "trending",
-          game_title: "Trending",
-          content_type: "trending",
-          platform: "youtube",
-          external_id: item.id,
-          title: item.snippet?.title,
-          streamer_name: item.snippet?.channelTitle,
-          thumbnail_url:
-            item.snippet?.thumbnails?.high?.url ||
-            item.snippet?.thumbnails?.medium?.url ||
-            "",
-          viewer_count: Number(item.statistics?.viewCount || 0),
-          published_at: item.snippet?.publishedAt,
-          language: "English",
-          updated_at: new Date().toISOString(),
-        });
+      const spend = await canSpendUnits(1);
+      if (spend.ok) {
+        const data = await youtubeFetch(
+          `/videos?part=snippet,statistics&chart=mostPopular&videoCategoryId=20&maxResults=20&regionCode=US`,
+          settings.youtube_api_key
+        );
+        await recordLightUnits(1);
+        for (const item of data.items || []) {
+          rows.push({
+            game_id: null,
+            game_slug: "trending",
+            game_title: "Trending",
+            content_type: "trending",
+            platform: "youtube",
+            external_id: item.id,
+            title: item.snippet?.title,
+            streamer_name: item.snippet?.channelTitle,
+            thumbnail_url:
+              item.snippet?.thumbnails?.high?.url ||
+              item.snippet?.thumbnails?.medium?.url ||
+              "",
+            viewer_count: Number(item.statistics?.viewCount || 0),
+            published_at: item.snippet?.publishedAt,
+            language: "English",
+            updated_at: new Date().toISOString(),
+          });
+        }
       }
     } catch (e) {
       console.error("YouTube trending error", e);

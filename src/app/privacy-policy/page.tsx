@@ -8,7 +8,8 @@ export default function PrivacyPolicyPage() {
       <p>
         GamePlay Live (gameplaylive.live) is operated by Cornerstone Studios. This Privacy Policy
         explains what we collect, how we use it, and your choices — including advertising (Google
-        AdSense on the web and Google AdMob in our Android app).
+        AdSense on the web and Google AdMob in our Android app) and Go Live Studio permissions on
+        Android.
       </p>
 
       <h2>1. Who we are</h2>
@@ -16,8 +17,8 @@ export default function PrivacyPolicyPage() {
         GamePlay Live is a creator-first gaming hub: we help fans discover live YouTube and Twitch
         gameplay, follow favorite creators, browse esports tournaments, and use free Go Live Studio
         tools. Official support:{" "}
-        <a className="text-cyan" href="mailto:gameliveapp@gmail.com">
-          gameliveapp@gmail.com
+        <a className="text-cyan" href="mailto:gameplayliveapp@gmail.com">
+          gameplayliveapp@gmail.com
         </a>
         .
       </p>
@@ -36,9 +37,18 @@ export default function PrivacyPolicyPage() {
           messages, poll votes, and basic product events needed to operate the service.
         </li>
         <li>
-          <strong>Device / app signals (Android):</strong> when you use our Android wrapper, AdMob
-          may receive standard mobile advertising identifiers subject to Google&apos;s policies and
-          your device settings.
+          <strong>Device / app signals (Android):</strong> when you use our Android app, AdMob may
+          receive standard mobile advertising identifiers subject to Google&apos;s policies, your
+          device settings, and (where required) consent collected via Google&apos;s User Messaging
+          Platform.
+        </li>
+        <li>
+          <strong>Go Live Studio (Android, only when you start a stream):</strong> with your
+          explicit system consent we capture screen content (MediaProjection), optional microphone
+          audio for commentary, and may show a floating LIVE control bubble (display-over-other-apps)
+          plus a foreground notification with Stop / Mute. Encoded video/audio is sent over RTMPS
+          to <em>your</em> YouTube broadcast. We do not upload screen or mic recordings to GamePlay
+          Live servers.
         </li>
       </ul>
 
@@ -97,8 +107,9 @@ export default function PrivacyPolicyPage() {
       <p>
         <strong>Google AdMob (Android app only):</strong> Inside our Android app WebView we do{" "}
         <em>not</em> load AdSense. Native AdMob banners are shown instead, so web and app ad
-        inventory stay isolated per Google policy. You can reset or limit ad personalization in
-        Android Settings → Google → Ads.
+        inventory stay isolated per Google policy. Where required by law, we present a consent form
+        (UMP) before requesting ads. You can also reset or limit ad personalization in Android
+        Settings → Google → Ads.
       </p>
       <p>
         <strong>Creator tools:</strong> Go Live Studio, Favorite Gamers, Squad Finder, and related
@@ -109,14 +120,16 @@ export default function PrivacyPolicyPage() {
       <h2>5. Analytics &amp; infrastructure</h2>
       <p>
         We use Supabase for auth, database, and product analytics needed to run GamePlay Live
-        (profiles, favorites, watch telemetry). Hosting may involve Netlify or similar CDNs that
-        process standard request logs. We do not sell personal information.
+        (profiles, favorites, watch telemetry). The website and APIs are hosted on Cloudflare
+        Workers (and related Cloudflare edge services) that process standard request logs. We do not
+        sell personal information.
       </p>
 
       <h2>6. How we use data</h2>
       <ul>
         <li>Authenticate you and personalize Live / Latest / Favorites feeds</li>
         <li>Operate chat, polls, tournament discovery, and Go Live Studio</li>
+        <li>Encode and send your Go Live stream to YouTube when you choose to broadcast</li>
         <li>Measure ad performance (aggregated) for AdSense/AdMob where enabled</li>
         <li>Comply with legal obligations</li>
       </ul>
@@ -124,18 +137,19 @@ export default function PrivacyPolicyPage() {
       <h2>7. Sharing</h2>
       <p>
         We share data with service providers only as needed to operate GamePlay Live: Supabase,
-        Google (Auth, YouTube, AdSense/AdMob), Twitch, and our hosting provider. We do not sell
-        personal information.
+        Google (Auth, YouTube, AdSense/AdMob/UMP), Twitch, and Cloudflare. When you Go Live, stream
+        media is sent to YouTube under your Google account. We do not sell personal information.
       </p>
 
       <h2>8. Retention &amp; deletion</h2>
       <p>
         Account data is retained while your account is active. Email{" "}
-        <a className="text-cyan" href="mailto:gameliveapp@gmail.com">
-          gameliveapp@gmail.com
+        <a className="text-cyan" href="mailto:gameplayliveapp@gmail.com">
+          gameplayliveapp@gmail.com
         </a>{" "}
         to request deletion. Chat messages may remain visible to other participants until removed by
-        moderation.
+        moderation. Screen/mic capture for Go Live is transient on-device encoding — we do not keep
+        those recordings on GamePlay Live servers.
       </p>
 
       <h2>9. Children</h2>
@@ -147,8 +161,8 @@ export default function PrivacyPolicyPage() {
       <h2>10. Contact</h2>
       <p>
         Privacy questions:{" "}
-        <a className="text-cyan" href="mailto:gameliveapp@gmail.com">
-          gameliveapp@gmail.com
+        <a className="text-cyan" href="mailto:gameplayliveapp@gmail.com">
+          gameplayliveapp@gmail.com
         </a>
       </p>
     </LegalShell>

@@ -218,7 +218,8 @@ values
   ('11111111-1111-1111-1111-111111111108', 'CS2', 'cs2', 'https://static-cdn.jtvnw.net/ttv-boxart/32399_IGDB-285x380.jpg', '32399', 'CS2', true),
   ('11111111-1111-1111-1111-111111111109', 'Dota 2', 'dota-2', 'https://static-cdn.jtvnw.net/ttv-boxart/29595_IGDB-285x380.jpg', '29595', 'Dota 2', true),
   ('11111111-1111-1111-1111-111111111105', 'Fortnite', 'fortnite', 'https://static-cdn.jtvnw.net/ttv-boxart/33214_IGDB-285x380.jpg', '33214', 'Fortnite', true),
-  ('11111111-1111-1111-1111-111111111110', 'Call of Duty', 'call-of-duty', 'https://static-cdn.jtvnw.net/ttv-boxart/512710_IGDB-285x380.jpg', '512710', 'Call of Duty', true)
+  ('11111111-1111-1111-1111-111111111110', 'Call of Duty', 'call-of-duty', 'https://static-cdn.jtvnw.net/ttv-boxart/512710_IGDB-285x380.jpg', '512710', 'Call of Duty', true),
+  ('11111111-1111-1111-1111-111111111111', 'Euro Truck Simulator 2', 'euro-truck-simulator-2', 'https://static-cdn.jtvnw.net/ttv-boxart/75467_IGDB-285x380.jpg', '75467', 'Euro Truck Simulator 2', true)
 on conflict (slug) do update set
   title = excluded.title,
   twitch_game_id = excluded.twitch_game_id,
@@ -752,6 +753,34 @@ create table if not exists public.youtube_quota_daily (
 
 alter table public.youtube_quota_daily enable row level security;
 
+create or replace function public.youtube_quota_add(
+  p_day date,
+  p_search integer,
+  p_units integer
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.youtube_quota_daily as q (day, search_list_calls, units_estimated, updated_at)
+  values (
+    p_day,
+    greatest(coalesce(p_search, 0), 0),
+    greatest(coalesce(p_units, 0), 0),
+    now()
+  )
+  on conflict (day) do update set
+    search_list_calls = q.search_list_calls + excluded.search_list_calls,
+    units_estimated = q.units_estimated + excluded.units_estimated,
+    updated_at = now();
+end;
+$$;
+
+revoke all on function public.youtube_quota_add(date, integer, integer) from public;
+grant execute on function public.youtube_quota_add(date, integer, integer) to service_role;
+
 create table if not exists public.cached_live_feeds (
   id uuid primary key default gen_random_uuid(),
   platform text not null check (platform in ('youtube', 'twitch')),
@@ -905,3 +934,74 @@ create policy "Users delete own squad posts"
 
 grant select on public.squad_posts to anon, authenticated;
 grant insert, delete on public.squad_posts to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Launch hardening (synced from 20261119_launch_hardening.sql)
+-- ---------------------------------------------------------------------------
+alter table public.squad_posts
+  add column if not exists max_slots integer not null default 4,
+  add column if not exists slots_filled integer not null default 1,
+  add column if not exists joined_user_ids uuid[] not null default '{}';
+
+create table if not exists public.tournament_reminders (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  tournament_id text not null,
+  tournament_title text not null default '',
+  game text not null default '',
+  start_time timestamptz,
+  watch_path text,
+  notified boolean not null default false,
+  created_at timestamptz not null default now(),
+  unique (user_id, tournament_id)
+);
+alter table public.tournament_reminders enable row level security;
+drop policy if exists "Users manage own tournament reminders" on public.tournament_reminders;
+create policy "Users manage own tournament reminders"
+  on public.tournament_reminders for all to authenticated
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+grant select, insert, update, delete on public.tournament_reminders to authenticated;
+
+create table if not exists public.favorite_live_alerts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  creator_id uuid not null references public.tracked_creators (id) on delete cascade,
+  live_session_key text not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, creator_id, live_session_key)
+);
+alter table public.favorite_live_alerts enable row level security;
+
+create table if not exists public.push_devices (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users (id) on delete cascade,
+  token text not null unique,
+  platform text not null default 'web',
+  enabled boolean not null default true,
+  timezone text,
+  locale text,
+  last_seen_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+create table if not exists public.push_campaigns (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  body text not null,
+  image_url text,
+  link_url text,
+  sent_by uuid references auth.users (id) on delete set null,
+  sent_count integer not null default 0,
+  fail_count integer not null default 0,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.push_digest_log (
+  id uuid primary key default gen_random_uuid(),
+  device_id uuid not null references public.push_devices (id) on delete cascade,
+  slot text not null,
+  local_date date not null,
+  created_at timestamptz not null default now(),
+  unique (device_id, slot, local_date)
+);
+
+drop policy if exists "Authenticated can insert tracked creators" on public.tracked_creators;
+drop policy if exists "Authenticated can update tracked creators" on public.tracked_creators;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Radio, Trophy, Users, UserPlus } from "lucide-react";
 import type { MouseEvent } from "react";
@@ -13,6 +13,7 @@ import { CommunityCreatorsRow } from "@/components/feed/CommunityCreatorsRow";
 import { SquadFinder } from "@/components/squads/SquadFinder";
 import { useApp } from "@/components/providers/AppProviders";
 import type { CachedStream, FavoriteGamerStatus, HomeTab } from "@/lib/types";
+import { DEFAULT_GAMES } from "@/lib/default-games";
 import { LANGUAGES, cn, formatViewers } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
@@ -31,6 +32,31 @@ export function HomeFeed() {
   const [favStatuses, setFavStatuses] = useState<FavoriteGamerStatus[]>([]);
   const [loadingFavs, setLoadingFavs] = useState(false);
   const [squadCount, setSquadCount] = useState(0);
+  const liveScrollRef = useRef<HTMLDivElement>(null);
+
+  // Nested Live Now list keeps its own scroll; at the top/bottom, chain the
+  // wheel to the page so sections below (and above) stay reachable.
+  useEffect(() => {
+    const el = liveScrollRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      const maxScroll = Math.max(0, scrollHeight - clientHeight);
+      const atTop = scrollTop <= 0;
+      const atBottom = scrollTop >= maxScroll - 1;
+      const goingDown = e.deltaY > 0;
+      const goingUp = e.deltaY < 0;
+
+      if ((goingDown && atBottom) || (goingUp && atTop)) {
+        e.preventDefault();
+        window.scrollBy({ top: e.deltaY, left: 0, behavior: "auto" });
+      }
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [tab, streams.length]);
 
   useEffect(() => {
     if (profile?.preferred_language) setLanguage(profile.preferred_language);
@@ -196,11 +222,32 @@ export function HomeFeed() {
     setEditGames(false);
   }
 
+  // Prefer live `games` from context, but always union DEFAULT_GAMES so new titles
+  // (e.g. ETS2) appear even when Supabase/onboarding favorites are stale.
+  const pillGames = (() => {
+    const bySlug = new Map(games.map((g) => [g.slug, g]));
+    for (const g of DEFAULT_GAMES) {
+      if (!bySlug.has(g.slug)) {
+        bySlug.set(g.slug, {
+          id: g.id,
+          title: g.title,
+          slug: g.slug,
+          cover_image: g.cover_image,
+          twitch_game_id: g.twitch_game_id,
+          youtube_query: g.youtube_query,
+          is_active: true,
+        });
+      }
+    }
+    return [...bySlug.values()].sort((a, b) => a.title.localeCompare(b.title));
+  })();
+
   const pills = [
     { key: "all", label: "All Games" },
-    ...games
-      .filter((g) => favoriteSlugs.includes(g.slug) || favoriteSlugs.length === 0)
-      .map((g) => ({ key: g.slug, label: g.title })),
+    ...pillGames.map((g) => ({
+      key: g.slug,
+      label: g.slug === "euro-truck-simulator-2" ? "ETS2" : g.title,
+    })),
   ];
 
   function goLiveClick(e: MouseEvent) {
@@ -343,7 +390,10 @@ export function HomeFeed() {
               ) : (
                 <>
                   <AdBanner variant="strip" label="Sponsored" />
-                  <div className="max-h-[min(68vh,38rem)] overflow-y-auto overscroll-contain rounded-xl border border-white/5 bg-black/20 p-2.5 scrollbar-thin md:max-h-[min(70vh,42rem)] md:p-3">
+                  <div
+                    ref={liveScrollRef}
+                    className="max-h-[min(68vh,38rem)] overflow-y-auto overscroll-y-auto rounded-xl border border-white/5 bg-black/20 p-2.5 scrollbar-thin md:max-h-[min(70vh,42rem)] md:p-3"
+                  >
                     <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 lg:gap-4">
                       {filtered.map((stream) => (
                         <StreamCard key={stream.id} stream={stream} />
@@ -481,7 +531,7 @@ export function HomeFeed() {
           <div className="glass glow-border w-full max-w-lg rounded-3xl p-5">
             <h3 className="font-display text-xl font-bold">Edit favorite games</h3>
             <div className="mt-4 flex flex-wrap gap-2">
-              {games.map((g) => {
+              {pillGames.map((g) => {
                 const on = favoriteSlugs.includes(g.slug);
                 return (
                   <button

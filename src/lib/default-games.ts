@@ -1,4 +1,4 @@
-/** Top 10 default games — homepage discovery uses one YouTube search.list / 20 min. */
+/** Default games for homepage discovery — one YouTube search.list / 20 min. */
 
 export interface DefaultGameDef {
   id: string;
@@ -25,6 +25,7 @@ export const DEFAULT_GAME_SLUGS = [
   "dota-2",
   "fortnite",
   "call-of-duty",
+  "euro-truck-simulator-2",
 ] as const;
 
 export type DefaultGameSlug = (typeof DEFAULT_GAME_SLUGS)[number];
@@ -156,11 +157,32 @@ export const DEFAULT_GAMES: DefaultGameDef[] = [
       "cod ",
     ],
   },
+  {
+    id: "11111111-1111-1111-1111-111111111111",
+    title: "Euro Truck Simulator 2",
+    slug: "euro-truck-simulator-2",
+    cover_image: "https://static-cdn.jtvnw.net/ttv-boxart/75467_IGDB-285x380.jpg",
+    twitch_game_id: "75467",
+    youtube_query: "Euro Truck Simulator 2",
+    classifyKeywords: [
+      "euro truck simulator 2",
+      "euro truck simulator",
+      "ets2",
+      "ets 2",
+      "eurotruck",
+      "euro truck",
+      "truckersmp",
+      "truckers mp",
+      "convoy ets",
+      "vtc",
+      "promods",
+    ],
+  },
 ];
 
-/** Single YouTube search.list query covering all 10 titles (OR). Still 1 call / 20 min. */
+/** Single YouTube search.list query covering all default titles (OR). Still 1 call / 20 min. */
 export const YOUTUBE_LIVE_BROAD_QUERY =
-  'BGMI|"Free Fire"|Valorant|"GTA V"|Minecraft|Roblox|CS2|"Dota 2"|Fortnite|"Call of Duty"|Warzone|CODM';
+  'BGMI|"Free Fire"|Valorant|"GTA V"|Minecraft|Roblox|CS2|"Dota 2"|Fortnite|"Call of Duty"|Warzone|CODM|"Euro Truck Simulator 2"|ETS2|"Euro Truck"';
 
 /** All signed-in users share the same following cap (Pro paywall removed for launch). */
 export const FAVORITE_LIMITS = {
@@ -168,8 +190,16 @@ export const FAVORITE_LIMITS = {
   pro: 15,
 } as const;
 
-/** Soft cap on YouTube search.list calls for channel discovery (live sync uses ~72/day). */
-export const YOUTUBE_SEARCH_SOFT_CAP = 95;
+/**
+ * Soft cap on YouTube search.list *count* for non-Live discovery
+ * (favorite channel search, etc.). Live cron is reserved separately
+ * (~72/day) inside youtube-quota.ts — do not raise this toward 95 again
+ * or shared spenders can starve Live Now.
+ */
+export const YOUTUBE_SEARCH_SOFT_CAP = 20;
+
+/** Max YouTube pinned creators refreshed in one cron tick (oldest-stale first). */
+export const YOUTUBE_PIN_REFRESH_MAX_PER_RUN = 12;
 
 /** All Twitch category ids to batch in one /helix/streams request. */
 export function twitchGameIdBatch(): string[] {

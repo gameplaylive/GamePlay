@@ -269,7 +269,11 @@ export function GoLiveClient() {
                       : "border-white/10 text-muted hover:text-white"
                   )}
                 >
-                  {g === "Free Fire" ? "Free Fire MAX" : g}
+                  {g === "Free Fire"
+                    ? "Free Fire MAX"
+                    : g === "Euro Truck Simulator 2"
+                      ? "ETS2"
+                      : g}
                 </button>
               ))}
             </div>

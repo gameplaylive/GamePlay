@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("subscription_tier, full_name, email")
+    .select("full_name, email")
     .eq("id", user.id)
     .maybeSingle();
 

@@ -1,23 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
   xmlns:ads="http://schemas.android.com/apk/res-auto"
   android:layout_width="match_parent"
   android:layout_height="match_parent"
-  android:orientation="vertical"
-  android:background="#07090F">
+  android:background="#000000">
 
-  <WebView
-    android:id="@+id/webView"
+  <LinearLayout
     android:layout_width="match_parent"
-    android:layout_height="0dp"
-    android:layout_weight="1" />
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#07090F">
 
-  <!-- AdMob banner: shown for free users; hidden when Pro via AndroidStreamBridge -->
-  <com.google.android.gms.ads.AdView
-    android:id="@+id/adView"
+    <WebView
+      android:id="@+id/webView"
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1" />
+
+    <com.google.android.gms.ads.AdView
+      android:id="@+id/adView"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:visibility="gone"
+      ads:adSize="BANNER"
+      ads:adUnitId="@string/admob_banner_unit_id" />
+  </LinearLayout>
+
+  <!-- Native splash until first page paint; black + centered mark -->
+  <FrameLayout
+    android:id="@+id/splashOverlay"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:visibility="gone"
-    ads:adSize="BANNER"
-    ads:adUnitId="@string/admob_banner_unit_id" />
-</LinearLayout>
+    android:layout_height="match_parent"
+    android:background="#000000"
+    android:clickable="true"
+    android:focusable="true">
+
+    <ImageView
+      android:id="@+id/splashLogo"
+      android:layout_width="96dp"
+      android:layout_height="96dp"
+      android:layout_gravity="center"
+      android:contentDescription="@string/app_name"
+      android:scaleType="fitCenter"
+      android:src="@drawable/splash_logo" />
+  </FrameLayout>
+</FrameLayout>

@@ -1,50 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools">
 
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
-  <uses-permission android:name="android.permission.RECORD_AUDIO" />
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
   <uses-permission android:name="android.permission.WAKE_LOCK" />
   <!-- Required for AdMob advertising ID on Android 13+ -->
   <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
-  <queries>
-    <package android:name="com.pubg.imobile" />
-    <package android:name="com.dts.freefiremax" />
-    <package android:name="com.mojang.minecraftpe" />
-    <package android:name="com.roblox.client" />
-  </queries>
+  <!-- Strip FGS permissions that libraries (e.g. WorkManager via Ads) may merge in -->
+  <uses-permission
+    android:name="android.permission.FOREGROUND_SERVICE"
+    tools:node="remove" />
+  <uses-permission
+    android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"
+    tools:node="remove" />
+  <uses-permission
+    android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+    tools:node="remove" />
+  <uses-permission
+    android:name="android.permission.RECORD_AUDIO"
+    tools:node="remove" />
+  <uses-permission
+    android:name="android.permission.SYSTEM_ALERT_WINDOW"
+    tools:node="remove" />
 
   <application
     android:allowBackup="false"
+    android:icon="@mipmap/ic_launcher"
+    android:roundIcon="@mipmap/ic_launcher_round"
     android:label="@string/app_name"
     android:supportsRtl="true"
     android:usesCleartextTraffic="false">
 
-    <!--
-      AdMob APPLICATION_ID (required by the Mobile Ads SDK).
-
-      DEBUG / local builds: keep Google's sample App ID below (always valid for testing).
-
-      BEFORE compiling the Play Store / production APK:
-        1. Open https://admob.google.com/ → Apps → your Gameplay Live app
-        2. Copy App ID (format: ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy)
-        3. Replace the android:value below with that App ID
-        4. Also set the matching banner unit in res/values/strings.xml (admob_banner_unit_id)
-
-      Do NOT ship a Play release still using ca-app-pub-3940256099942544~…
-    -->
     <meta-data
       android:name="com.google.android.gms.ads.APPLICATION_ID"
-      android:value="ca-app-pub-9916342177645213~6668120089" />
+      android:value="ca-app-pub-5165582915599822~2213723962" />
 
     <activity
       android:name=".MainActivity"
       android:exported="true"
+      android:theme="@style/Theme.GameplayLive"
       android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
       android:launchMode="singleTask">
       <intent-filter>
@@ -59,15 +56,9 @@
       </intent-filter>
     </activity>
 
-    <activity
-      android:name=".StreamPermissionActivity"
-      android:exported="false"
-      android:excludeFromRecents="true"
-      android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-
+    <!-- Disable WorkManager's foreground service so Play does not require FGS declaration -->
     <service
-      android:name=".ScreenStreamService"
-      android:exported="false"
-      android:foregroundServiceType="mediaProjection" />
+      android:name="androidx.work.impl.foreground.SystemForegroundService"
+      tools:node="remove" />
   </application>
 </manifest>

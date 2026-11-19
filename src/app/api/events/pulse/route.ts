@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getAppSettingsFull } from "@/lib/settings";
-import { youtubeFetch } from "@/lib/youtube";
-import {
-  badgeForType,
-  tournamentToPulse,
-  YOUTUBE_EVENT_QUERIES,
-} from "@/lib/events";
+import { badgeForType, tournamentToPulse } from "@/lib/events";
 import { getUnifiedTournaments } from "@/lib/fetch-tournaments";
 import type { PulseEvent } from "@/lib/types";
 
@@ -25,54 +20,13 @@ async function fetchTournamentPulse(): Promise<PulseEvent[]> {
   }
 }
 
+/**
+ * Do NOT call YouTube search.list here.
+ * Homepage loads this on every visit; each search.list costs 100 units and was
+ * starving Live Now. Pulse is tournaments + special_events only.
+ */
 async function fetchYoutubeUpcoming(): Promise<PulseEvent[]> {
-  const settings = await getAppSettingsFull();
-  if (!settings.youtube_api_key) return [];
-
-  const out: PulseEvent[] = [];
-  for (const q of YOUTUBE_EVENT_QUERIES.slice(0, 4)) {
-    try {
-      const data = await youtubeFetch(
-        `/search?part=snippet&type=video&eventType=upcoming&maxResults=2&q=${encodeURIComponent(q)}`,
-        settings.youtube_api_key
-      );
-      for (const item of data.items || []) {
-        const videoId = item.id?.videoId;
-        if (!videoId) continue;
-        const start =
-          item.snippet?.publishTime ||
-          item.snippet?.publishedAt ||
-          new Date(Date.now() + 48 * 3600000).toISOString();
-        out.push({
-          id: `youtube:${videoId}`,
-          title: item.snippet?.title || q,
-          game_name: q.includes("Nintendo")
-            ? "Nintendo"
-            : q.includes("PlayStation") || q.includes("State of Play")
-              ? "PlayStation"
-              : "Multi",
-          event_type: q.toLowerCase().includes("direct") || q.toLowerCase().includes("fest") || q.toLowerCase().includes("awards") || q.toLowerCase().includes("state of play")
-            ? "game_show"
-            : "gameplay",
-          badge: badgeForType(
-            q.toLowerCase().includes("direct") ||
-              q.toLowerCase().includes("fest") ||
-              q.toLowerCase().includes("awards") ||
-              q.toLowerCase().includes("state of play")
-              ? "game_show"
-              : "gameplay"
-          ),
-          start_time: start,
-          stream_url: `https://www.youtube.com/watch?v=${videoId}`,
-          status: "UPCOMING",
-        });
-      }
-    } catch (e) {
-      console.error("youtube upcoming", q, e);
-    }
-  }
-
-  return out;
+  return [];
 }
 
 async function fetchSpecialEvents(): Promise<PulseEvent[]> {

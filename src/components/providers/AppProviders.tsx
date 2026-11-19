@@ -3,21 +3,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { AppSettingsPublic, Game, Profile, UserFavorite } from "@/lib/types";
 import { DEMO_PROFILE, MOCK_GAMES, MOCK_SETTINGS } from "@/lib/mock-data";
-import { DEFAULT_GAME_SLUGS } from "@/lib/default-games";
+import { DEFAULT_GAMES, DEFAULT_GAME_SLUGS } from "@/lib/default-games";
 import { createClient } from "@/lib/supabase/client";
 import { OnboardingModal } from "@/components/auth/OnboardingModal";
 import { AdSenseScript } from "@/components/AdSenseScript";
 import { NativeAdMobSync } from "@/components/NativeAdMobSync";
 import { FirebasePushOptIn } from "@/components/FirebasePushOptIn";
 import { YOUTUBE_OAUTH_SCOPE } from "@/lib/go-live";
-
-export interface ProModalOptions {
-  /** Always show ₹99 INR pricing (default for all Pro CTAs). */
-  inrPrice?: boolean;
-  highlight?: "go-live" | "favorites" | "ads" | "reminders" | "squads" | "default";
-  /** Optional one-line contextual header above the title */
-  contextTitle?: string;
-}
 
 interface AppContextValue {
   profile: Profile | null;
@@ -34,10 +26,6 @@ interface AppContextValue {
   /** Returns provider_token if already present; otherwise starts OAuth with YouTube scope (redirect). */
   connectYouTube: (nextPath?: string) => Promise<string | null>;
   signOut: () => Promise<void>;
-  openProModal: (options?: ProModalOptions) => void;
-  closeProModal: () => void;
-  proModalOpen: boolean;
-  proModalOptions: ProModalOptions | undefined;
   enterDemo: () => void;
 }
 
@@ -55,22 +43,39 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<AppSettingsPublic>(MOCK_SETTINGS);
   const [favorites, setFavorites] = useState<UserFavorite[]>([]);
   const [loading, setLoading] = useState(true);
-  const [proModalOpen, setProModalOpen] = useState(false);
-  const [proModalOptions, setProModalOptions] = useState<ProModalOptions | undefined>();
   const [demoMode, setDemoMode] = useState(false);
   const supabase = useMemo(() => createClient(), []);
   const supabaseReady = Boolean(supabase);
 
   const loadGames = useCallback(async () => {
+    const allowed = new Set(DEFAULT_GAME_SLUGS as readonly string[]);
+    const mergeDefaults = (rows: Game[]) => {
+      const bySlug = new Map(rows.filter((g) => allowed.has(g.slug)).map((g) => [g.slug, g]));
+      for (const g of DEFAULT_GAMES) {
+        if (!bySlug.has(g.slug)) {
+          bySlug.set(g.slug, {
+            id: g.id,
+            title: g.title,
+            slug: g.slug,
+            cover_image: g.cover_image,
+            twitch_game_id: g.twitch_game_id,
+            youtube_query: g.youtube_query,
+            is_active: true,
+          });
+        }
+      }
+      return [...bySlug.values()].sort((a, b) => a.title.localeCompare(b.title));
+    };
+
     if (!supabase) {
-      setGames(MOCK_GAMES);
+      setGames(mergeDefaults(MOCK_GAMES));
       return;
     }
     const { data } = await supabase.from("games").select("*").eq("is_active", true).order("title");
     if (data?.length) {
-      const allowed = new Set(DEFAULT_GAME_SLUGS as readonly string[]);
-      const filtered = (data as Game[]).filter((g) => allowed.has(g.slug));
-      setGames(filtered.length ? filtered : MOCK_GAMES);
+      setGames(mergeDefaults(data as Game[]));
+    } else {
+      setGames(mergeDefaults(MOCK_GAMES));
     }
   }, [supabase]);
 
@@ -250,17 +255,6 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     setFavorites([]);
   }, [supabase]);
 
-  /** Paywalls removed for launch — kept as no-op so call sites compile. */
-  const openProModal = useCallback((_options?: ProModalOptions) => {
-    setProModalOpen(false);
-    setProModalOptions(undefined);
-  }, []);
-
-  const closeProModal = useCallback(() => {
-    setProModalOpen(false);
-    setProModalOptions(undefined);
-  }, []);
-
   const value: AppContextValue = {
     profile,
     games,
@@ -275,10 +269,6 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     signInWithGoogle,
     connectYouTube,
     signOut,
-    openProModal,
-    closeProModal,
-    proModalOpen,
-    proModalOptions,
     enterDemo,
   };
 

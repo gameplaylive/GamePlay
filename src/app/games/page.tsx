@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AdBanner } from "@/components/AdBanner";
 import { useApp } from "@/components/providers/AppProviders";
+import { DEFAULT_GAMES } from "@/lib/default-games";
 
 const GUIDES: Record<string, string> = {
   bgmi: "India’s battlegrounds — scrims, rank push, and tournament watch parties.",
@@ -16,10 +17,28 @@ const GUIDES: Record<string, string> = {
   "dota-2": "Pro circuits and pub stomps from the ancient battlefield.",
   fortnite: "Zero build, ranked, and creative maps from top builders.",
   "call-of-duty": "Warzone, multiplayer, and COD Mobile action.",
+  "euro-truck-simulator-2": "Long-haul convoys, TruckersMP, and chill ETS2 road trips.",
 };
 
 export default function GamesPage() {
   const { games } = useApp();
+  const catalog = (() => {
+    const bySlug = new Map(games.map((g) => [g.slug, g]));
+    for (const g of DEFAULT_GAMES) {
+      if (!bySlug.has(g.slug)) {
+        bySlug.set(g.slug, {
+          id: g.id,
+          title: g.title,
+          slug: g.slug,
+          cover_image: g.cover_image,
+          twitch_game_id: g.twitch_game_id,
+          youtube_query: g.youtube_query,
+          is_active: true,
+        });
+      }
+    }
+    return [...bySlug.values()].sort((a, b) => a.title.localeCompare(b.title));
+  })();
 
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-3 py-5 md:px-6 md:py-8">
@@ -33,36 +52,39 @@ export default function GamesPage() {
         </p>
       </div>
 
-      {games.length > 0 && <AdBanner variant="strip" label="Sponsored" />}
+      {catalog.length > 0 && <AdBanner variant="strip" label="Sponsored" />}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {games.map((g) => (
-          <Link
-            key={g.id}
-            href="/?tab=live"
-            className="group overflow-hidden rounded-2xl border border-white/5 bg-[#0c101a] shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition hover:-translate-y-1 hover:border-cyan/35"
-          >
-            <div className="relative aspect-[3/4]">
-              <Image
-                src={g.cover_image}
-                alt={g.title}
-                fill
-                className="object-cover transition duration-500 group-hover:scale-105"
-                unoptimized
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 space-y-1 p-2.5">
-                <p className="font-display text-sm font-bold leading-tight">{g.title}</p>
-                <p className="line-clamp-2 text-[10px] leading-snug text-white/65">
-                  {GUIDES[g.slug] || "Live gameplay and latest videos from this title."}
-                </p>
+        {catalog.map((g) => {
+          const label = g.slug === "euro-truck-simulator-2" ? "ETS2" : g.title;
+          return (
+            <Link
+              key={g.id}
+              href="/?tab=live"
+              className="group overflow-hidden rounded-2xl border border-white/5 bg-[#0c101a] shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition hover:-translate-y-1 hover:border-cyan/35"
+            >
+              <div className="relative aspect-[3/4]">
+                <Image
+                  src={g.cover_image}
+                  alt={label}
+                  fill
+                  className="object-cover transition duration-500 group-hover:scale-105"
+                  unoptimized
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 space-y-1 p-2.5">
+                  <p className="font-display text-sm font-bold leading-tight">{label}</p>
+                  <p className="line-clamp-2 text-[10px] leading-snug text-white/65">
+                    {GUIDES[g.slug] || "Live gameplay and latest videos from this title."}
+                  </p>
+                </div>
               </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
 
-      {games.length > 0 && <AdBanner variant="strip" label="Sponsored" />}
+      {catalog.length > 0 && <AdBanner variant="strip" label="Sponsored" />}
     </div>
   );
 }

@@ -10,7 +10,11 @@ import {
   gameFromTwitchId,
   twitchGameIdBatch,
 } from "@/lib/default-games";
-import { recordSearchListCall } from "@/lib/youtube-quota";
+import {
+  YOUTUBE_SEARCH_LIST_COST,
+  canSpendUnits,
+  recordSearchListCall,
+} from "@/lib/youtube-quota";
 import { detectStreamLanguage } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -70,6 +74,17 @@ async function syncYoutubeLive(
   apiKey: string
 ) {
   if (!apiKey) return { skipped: true, reason: "no youtube key" };
+
+  // Live Now owns the reserved quota slice — do not use "shared" here.
+  const spend = await canSpendUnits(YOUTUBE_SEARCH_LIST_COST, "live");
+  if (!spend.ok) {
+    return {
+      skipped: true,
+      reason: "daily_unit_budget",
+      used: spend.used,
+      budget: spend.budget,
+    };
+  }
 
   const q = encodeURIComponent(YOUTUBE_LIVE_BROAD_QUERY);
   const liveYt = await youtubeFetch(

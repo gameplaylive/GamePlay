@@ -21,7 +21,6 @@ type Tab =
   | "analytics"
   | "ads"
   | "overview"
-  | "pricing"
   | "users"
   | "games"
   | "vault";
@@ -59,11 +58,9 @@ export function AdminDashboard() {
   const [communityLive, setCommunityLive] = useState(0);
   const [kpis, setKpis] = useState({
     users: 0,
-    pro: 0,
     games: MOCK_GAMES.length,
     live: MOCK_STREAMS.filter((s) => s.content_type === "live").length,
     videos: MOCK_STREAMS.filter((s) => s.content_type === "video").length,
-    mrr: MOCK_SETTINGS.pro_price_usd,
   });
 
   useEffect(() => {
@@ -105,12 +102,9 @@ export function AdminDashboard() {
         const data = await uRes.json();
         const list = (data.users || []) as Profile[];
         setUsers(list);
-        const pro = list.filter((u) => u.subscription_tier === "pro").length;
         setKpis((k) => ({
           ...k,
           users: list.length,
-          pro,
-          mrr: pro * Number(settings?.pro_price_usd || MOCK_SETTINGS.pro_price_usd),
         }));
       }
       if (gRes.ok) {
@@ -152,21 +146,6 @@ export function AdminDashboard() {
     } finally {
       setSyncing(false);
     }
-  }
-
-  async function savePricing() {
-    if (!settings) return;
-    const res = await fetch("/api/admin/update-price", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        pro_price_usd: settings.pro_price_usd,
-        pro_plan_name: settings.pro_plan_name,
-        pro_plan_description: settings.pro_plan_description,
-      }),
-    });
-    const data = await res.json();
-    setMessage(res.ok ? `Pricing saved · ₹${data.amount ?? settings.pro_price_usd}/mo (Cashfree INR)` : data.error);
   }
 
   async function saveVault() {
@@ -233,7 +212,6 @@ export function AdminDashboard() {
     { id: "users", label: "Users" },
     { id: "games", label: "Games" },
     { id: "vault", label: "API Vault" },
-    { id: "pricing", label: "Legacy Pricing" },
   ];
 
   return (
@@ -379,8 +357,7 @@ export function AdminDashboard() {
             <p className="font-semibold text-white/80">Later / Phase 2</p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>Sponsor / boost placements on homepage cards</li>
-              <li>Paid pin for Squad Finder (kept off while app is free)</li>
-              <li>Server push for tournament Notify Me</li>
+              <li>Squad Finder paid pin (kept off — app is free)</li>
             </ul>
           </div>
         </div>
@@ -392,14 +369,12 @@ export function AdminDashboard() {
 
       {tab === "overview" && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
               ["Users", kpis.users],
-              ["Pro", kpis.pro],
               ["Games", kpis.games],
               ["Live", kpis.live],
               ["Videos", kpis.videos],
-              ["MRR", `$${Number(kpis.mrr).toFixed(2)}`],
             ].map(([label, value]) => (
               <div key={label as string} className="glass rounded-2xl p-4">
                 <p className="text-[10px] uppercase tracking-widest text-muted">{label}</p>
@@ -422,43 +397,6 @@ export function AdminDashboard() {
         </div>
       )}
 
-      {tab === "pricing" && settings && (
-        <div className="glass max-w-xl space-y-3 rounded-2xl p-5">
-          <label className="block text-sm">
-            Plan name
-            <input
-              className="mt-1 w-full rounded-xl border border-border-glow bg-obsidian/50 px-3 py-2"
-              value={settings.pro_plan_name}
-              onChange={(e) => setSettings({ ...settings, pro_plan_name: e.target.value })}
-            />
-          </label>
-          <label className="block text-sm">
-            Description
-            <textarea
-              className="mt-1 w-full rounded-xl border border-border-glow bg-obsidian/50 px-3 py-2"
-              rows={3}
-              value={settings.pro_plan_description}
-              onChange={(e) => setSettings({ ...settings, pro_plan_description: e.target.value })}
-            />
-          </label>
-          <label className="block text-sm">
-            Monthly price (INR ₹)
-            <input
-              type="number"
-              min={1}
-              step={1}
-              className="mt-1 w-full rounded-xl border border-border-glow bg-obsidian/50 px-3 py-2"
-              value={settings.pro_price_usd}
-              onChange={(e) => setSettings({ ...settings, pro_price_usd: Number(e.target.value) })}
-            />
-          </label>
-          <p className="text-xs text-muted">Charged in India via Cashfree (UPI / cards / netbanking).</p>
-          <button onClick={() => void savePricing()} className="rounded-xl bg-gold px-5 py-2.5 text-sm font-bold text-obsidian">
-            Save pricing
-          </button>
-        </div>
-      )}
-
       {tab === "users" && (
         <div className="space-y-3">
           <input
@@ -473,7 +411,6 @@ export function AdminDashboard() {
               <thead className="bg-white/5 text-xs uppercase text-muted">
                 <tr>
                   <th className="px-3 py-2">User</th>
-                  <th className="px-3 py-2">Tier</th>
                   <th className="px-3 py-2">Role</th>
                   <th className="px-3 py-2">Banned</th>
                 </tr>
@@ -484,18 +421,6 @@ export function AdminDashboard() {
                     <td className="px-3 py-2">
                       <p className="font-semibold">{u.full_name || "—"}</p>
                       <p className="text-xs text-muted">{u.email}</p>
-                    </td>
-                    <td className="px-3 py-2">
-                      <button
-                        onClick={() =>
-                          void patchUser(u.id, {
-                            subscription_tier: u.subscription_tier === "pro" ? "free" : "pro",
-                          })
-                        }
-                        className="rounded-full border border-gold/40 px-3 py-1 text-xs text-gold"
-                      >
-                        {u.subscription_tier === "pro" ? "Revoke Pro" : "Grant Pro"}
-                      </button>
                     </td>
                     <td className="px-3 py-2">
                       <button
@@ -517,7 +442,7 @@ export function AdminDashboard() {
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-3 py-6 text-muted">
+                    <td colSpan={3} className="px-3 py-6 text-muted">
                       No users yet (connect Supabase Auth).
                     </td>
                   </tr>
@@ -619,16 +544,6 @@ export function AdminDashboard() {
               />
             </label>
           ))}
-
-          <p className="rounded-xl border border-cyan/20 bg-cyan/5 px-3 py-2 text-[11px] text-muted">
-            Cashfree keys live in server env only:{" "}
-            <code className="text-cyan">CASHFREE_APP_ID</code>,{" "}
-            <code className="text-cyan">CASHFREE_SECRET_KEY</code>,{" "}
-            <code className="text-cyan">CASHFREE_PLAN_ID_INR</code>,{" "}
-            <code className="text-cyan">CASHFREE_WEBHOOK_SECRET</code>,{" "}
-            <code className="text-cyan">CASHFREE_ENV</code>. Webhook:{" "}
-            <code className="text-cyan">/api/cashfree/webhook</code>
-          </p>
 
           <p className="pt-2 text-xs font-bold uppercase tracking-wider text-muted">AdSense (web / browser)</p>
           {(

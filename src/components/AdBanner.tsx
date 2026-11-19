@@ -66,11 +66,13 @@ export function AdBanner({ variant = "strip", className, label = "Sponsored" }: 
   const adsEnabled = settings.adsense_enabled !== false;
   const isStrip = variant === "strip" || variant === "feed";
 
-  const showRealAd =
-    !nativeApp &&
-    !blockedPath &&
-    adsEnabled &&
-    Boolean(settings.adsense_publisher_id?.trim() && settings.adsense_slot_id?.trim());
+  const publisher =
+    settings.adsense_publisher_id?.trim() ||
+    process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() ||
+    "";
+  const slot =
+    settings.adsense_slot_id?.trim() || process.env.NEXT_PUBLIC_ADSENSE_SLOT_ID?.trim() || "";
+  const showRealAd = !nativeApp && !blockedPath && adsEnabled && Boolean(publisher && slot);
 
   const lockRef = useLockStripHeight(isStrip);
 
@@ -106,27 +108,8 @@ export function AdBanner({ variant = "strip", className, label = "Sponsored" }: 
   if (nativeApp) return null;
   if (blockedPath) return null;
   if (!loading && !adsEnabled) return null;
-
-  if (!showRealAd) {
-    return (
-      <div
-        ref={isStrip ? lockRef : undefined}
-        className={cn(
-          "ad-strip flex w-full items-center justify-between gap-3 overflow-hidden rounded-xl border border-cyan/25 px-3 text-left",
-          isStrip ? "h-11" : "min-h-[250px] flex-col justify-center gap-4",
-          className
-        )}
-      >
-        <div className={cn("min-w-0", !isStrip && "text-center")}>
-          <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-cyan/80">{label}</p>
-          <p className="truncate text-[11px] font-semibold leading-tight text-white">Advertisement</p>
-        </div>
-        <span className="shrink-0 rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-[10px] font-bold text-muted">
-          Banner
-        </span>
-      </div>
-    );
-  }
+  // Collapse-safe: no placeholder strip when publisher/slot missing (env or vault).
+  if (!showRealAd) return null;
 
   if (!isStrip) {
     return (
@@ -142,8 +125,8 @@ export function AdBanner({ variant = "strip", className, label = "Sponsored" }: 
           key={uid}
           className="adsbygoogle"
           style={{ display: "block", minHeight: 240 }}
-          data-ad-client={settings.adsense_publisher_id}
-          data-ad-slot={settings.adsense_slot_id}
+          data-ad-client={publisher}
+          data-ad-slot={slot}
           data-ad-format="rectangle"
           data-full-width-responsive="false"
         />
@@ -171,8 +154,8 @@ export function AdBanner({ variant = "strip", className, label = "Sponsored" }: 
               overflow: "hidden",
               verticalAlign: "middle",
             }}
-            data-ad-client={settings.adsense_publisher_id}
-            data-ad-slot={settings.adsense_slot_id}
+            data-ad-client={publisher}
+            data-ad-slot={slot}
             data-ad-format="horizontal"
             data-full-width-responsive="false"
           />

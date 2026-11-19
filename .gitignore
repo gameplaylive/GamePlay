@@ -38,6 +38,25 @@ yarn-error.log*
 .env*
 !.env.example
 
+# Android signing secrets — never commit
+android-native/keystore.properties
+android-native/local.properties
+android-native/*.jks
+android-native/*.keystore
+android-native/*.p12
+**/*.jks
+**/*.keystore
+**/*.p12
+!**/src/**/ic_launcher*.xml
+
+# Android build / IDE
+android-native/.gradle/
+android-native/build/
+android-native/app/build/
+android-native/.idea/
+.cursor/
+supabase/.temp/
+
 # vercel
 .vercel
 

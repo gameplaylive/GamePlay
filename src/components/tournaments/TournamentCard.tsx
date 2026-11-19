@@ -17,26 +17,57 @@ interface Props {
 export function TournamentCard({ match, compact = false }: Props) {
   const { profile, signInWithGoogle } = useApp();
   const [notified, setNotified] = useState(false);
+  const [busy, setBusy] = useState(false);
   const watchPath = buildWatchPath(match);
   const isLive = match.status === "LIVE";
   const isUpcoming = match.status === "UPCOMING";
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("gameplay_live_tournament_alerts");
-      const ids: string[] = raw ? JSON.parse(raw) : [];
-      setNotified(ids.includes(match.id));
-    } catch {
-      setNotified(false);
-    }
-  }, [match.id]);
+    let cancelled = false;
+    (async () => {
+      if (!profile) {
+        setNotified(false);
+        return;
+      }
+      try {
+        const res = await fetch("/api/tournaments/reminders", { cache: "no-store" });
+        const data = await res.json();
+        if (!cancelled && Array.isArray(data.ids)) {
+          setNotified(data.ids.includes(match.id));
+        }
+      } catch {
+        if (!cancelled) setNotified(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [match.id, profile]);
 
-  function toggleNotify() {
-    const raw = localStorage.getItem("gameplay_live_tournament_alerts");
-    const ids: string[] = raw ? JSON.parse(raw) : [];
-    const next = notified ? ids.filter((id) => id !== match.id) : [...ids, match.id];
-    localStorage.setItem("gameplay_live_tournament_alerts", JSON.stringify(next));
-    setNotified(!notified);
+  async function toggleNotify() {
+    if (!profile) {
+      await signInWithGoogle("/tournaments");
+      return;
+    }
+    setBusy(true);
+    try {
+      const next = !notified;
+      const res = await fetch("/api/tournaments/reminders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tournament_id: match.id,
+          enabled: next,
+          tournament_title: match.match_title || match.tournament_name,
+          game: match.game,
+          start_time: match.start_time,
+          watch_path: watchPath || null,
+        }),
+      });
+      if (res.ok) setNotified(next);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function onWatch(e: React.MouseEvent) {
@@ -111,9 +142,10 @@ export function TournamentCard({ match, compact = false }: Props) {
           ) : isUpcoming ? (
             <button
               type="button"
-              onClick={toggleNotify}
+              disabled={busy}
+              onClick={() => void toggleNotify()}
               className={cn(
-                "inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold",
+                "inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold disabled:opacity-60",
                 notified
                   ? "border-gold/50 bg-gold/10 text-gold"
                   : "border-border-glow text-white hover:border-cyan/40"

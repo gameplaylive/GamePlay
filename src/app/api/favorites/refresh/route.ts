@@ -6,6 +6,7 @@ import {
   refreshTwitchCreator,
   refreshYoutubeCreator,
 } from "@/lib/tracked-creators-refresh";
+import { YOUTUBE_PIN_REFRESH_COST, canSpendUnits } from "@/lib/youtube-quota";
 import type { CreatorRecentVideo, FavoriteGamerStatus, Platform } from "@/lib/types";
 
 /**
@@ -61,7 +62,11 @@ export async function POST(request: Request) {
 
   if (needsRefresh) {
     if (platform === "youtube") {
-      await refreshYoutubeCreator(service, creator, settings.youtube_api_key);
+      const spend = await canSpendUnits(YOUTUBE_PIN_REFRESH_COST);
+      if (spend.ok) {
+        await refreshYoutubeCreator(service, creator, settings.youtube_api_key);
+      }
+      // If budget exhausted, serve last cached row below (autopilot-safe).
     } else {
       await refreshTwitchCreator(
         service,

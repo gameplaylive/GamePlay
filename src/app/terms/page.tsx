@@ -74,8 +74,8 @@ export default function TermsPage() {
 
       <h2>9. Contact</h2>
       <p>
-        <a className="text-cyan" href="mailto:gameliveapp@gmail.com">
-          gameliveapp@gmail.com
+        <a className="text-cyan" href="mailto:gameplayliveapp@gmail.com">
+          gameplayliveapp@gmail.com
         </a>
       </p>
     </LegalShell>

@@ -4,6 +4,7 @@ import Script from "next/script";
 import { Outfit, Syne } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/components/providers/AppProviders";
+import { SplashScreen } from "@/components/SplashScreen";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { PageBackBar } from "@/components/BackButton";
@@ -68,6 +69,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />
+        <SplashScreen />
         <AppProviders>
           <NavBar />
           <Suspense fallback={null}>

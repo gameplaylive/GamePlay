@@ -227,6 +227,7 @@ export type CommunityGame =
   | "Roblox"
   | "Valorant"
   | "GTA V"
+  | "Euro Truck Simulator 2"
   | "Other";
 
 export type StreamResolution = "720p60" | "1080p30";
@@ -258,6 +259,7 @@ export const COMMUNITY_GAMES: CommunityGame[] = [
   "Roblox",
   "Valorant",
   "GTA V",
+  "Euro Truck Simulator 2",
   "Other",
 ];
 
@@ -269,5 +271,6 @@ export const GAME_ANDROID_PACKAGES: Record<CommunityGame, string | null> = {
   Roblox: "com.roblox.client",
   Valorant: null,
   "GTA V": null,
+  "Euro Truck Simulator 2": null,
   Other: null,
 };
