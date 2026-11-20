@@ -20,6 +20,8 @@ declare global {
       isNativeApp?: () => boolean;
       /** AdMob sticky banner — free users only; Pro / ads-off → false */
       setBannerAdsEnabled?: (enabled: boolean) => void;
+      /** Open Google OAuth / account picker in Chrome Custom Tabs */
+      openExternalUrl?: (url: string) => void;
     };
   }
 }

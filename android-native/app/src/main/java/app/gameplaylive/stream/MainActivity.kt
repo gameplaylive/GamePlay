@@ -1,22 +1,27 @@
 package app.gameplaylive.stream
 
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.view.WindowCompat
 import com.google.android.gms.ads.AdView
 
 /**
  * WebView shell hosting GamePlay Live + AndroidStreamBridge + sticky AdMob banner.
- * Shows a black splash with the brand mark until the first page finishes loading.
+ * Google OAuth opens in Chrome Custom Tabs (account picker is blocked inside WebView).
  */
 class MainActivity : AppCompatActivity() {
 
@@ -34,6 +39,8 @@ class MainActivity : AppCompatActivity() {
   @SuppressLint("SetJavaScriptEnabled")
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    // Keep content between status / nav bars (Android 15+ edge-to-edge otherwise overflows).
+    WindowCompat.setDecorFitsSystemWindows(window, true)
     setContentView(R.layout.activity_main)
 
     webView = findViewById(R.id.webView)
@@ -43,7 +50,6 @@ class MainActivity : AppCompatActivity() {
     adMob = AdMobManager(this, adView)
     adMob.initialize()
 
-    // Soft pulse on the mark while the page loads
     splashLogo.animate()
       .scaleX(1.06f)
       .scaleY(1.06f)
@@ -65,14 +71,28 @@ class MainActivity : AppCompatActivity() {
     webView.settings.apply {
       javaScriptEnabled = true
       domStorageEnabled = true
+      databaseEnabled = true
       mediaPlaybackRequiresUserGesture = false
       mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-      userAgentString = "$userAgentString GameplayLiveAndroid/1.0"
+      // Helps some Google/account pages; Custom Tabs still used for OAuth.
+      userAgentString = userAgentString.replace("; wv", "")
+      setSupportMultipleWindows(false)
     }
     webView.webChromeClient = WebChromeClient()
     webView.webViewClient = object : WebViewClient() {
       override fun onPageFinished(view: WebView?, url: String?) {
         hideSplash()
+      }
+
+      override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+        val uri = request?.url ?: return false
+        return handleUri(uri)
+      }
+
+      @Deprecated("Deprecated in Java")
+      override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+        if (url.isNullOrBlank()) return false
+        return handleUri(Uri.parse(url))
       }
     }
 
@@ -83,16 +103,62 @@ class MainActivity : AppCompatActivity() {
         authCookieProvider = {
           CookieManager.getInstance().getCookie(API_BASE).orEmpty()
         },
-        bannerAdsController = { enabled -> adMob.setBannerAdsEnabled(enabled) }
+        bannerAdsController = { enabled -> adMob.setBannerAdsEnabled(enabled) },
+        onOpenExternalUrl = { url -> openCustomTab(url) }
       ),
       "AndroidStreamBridge"
     )
 
-    val deep = intent?.data?.toString()
-    webView.loadUrl(deep ?: WEB_URL)
+    loadFromIntent(intent)
 
-    // Failsafe: never leave users stuck on splash
     splashOverlay.postDelayed({ hideSplash() }, 4500)
+  }
+
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    loadFromIntent(intent)
+  }
+
+  private fun loadFromIntent(intent: Intent?) {
+    val deep = intent?.data?.toString()
+    if (!deep.isNullOrBlank()) {
+      webView.loadUrl(deep)
+    } else if (webView.url.isNullOrBlank()) {
+      webView.loadUrl(WEB_URL)
+    }
+  }
+
+  /** Open Google / OAuth hosts outside the WebView so the account picker works. */
+  private fun handleUri(uri: Uri): Boolean {
+    val host = uri.host?.lowercase().orEmpty()
+    val href = uri.toString()
+    // Stay in WebView for our site (including /auth/callback after App Link return).
+    if (host == "gameplaylive.live" || host.endsWith(".gameplaylive.live")) {
+      return false
+    }
+    val externalAuth =
+      host.startsWith("accounts.google.") ||
+        host == "accounts.google.com" ||
+        (host.endsWith("google.com") && (href.contains("/o/oauth") || href.contains("oauth2"))) ||
+        (host.endsWith("supabase.co") && href.contains("/auth/")) ||
+        host == "appleid.apple.com"
+    if (externalAuth) {
+      openCustomTab(href)
+      return true
+    }
+    return false
+  }
+
+  private fun openCustomTab(url: String) {
+    try {
+      CustomTabsIntent.Builder()
+        .setShowTitle(true)
+        .build()
+        .launchUrl(this, Uri.parse(url))
+    } catch (_: Exception) {
+      startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    }
   }
 
   private fun hideSplash() {

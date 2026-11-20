@@ -9,12 +9,15 @@ import android.widget.Toast
  *
  * Native phone screen Go Live (MediaProjection / FGS) is disabled for the Play Store
  * build. Users can still go live via the website + OBS / YouTube Studio.
+ *
+ * Google sign-in uses [openExternalUrl] → Chrome Custom Tabs (account picker works there).
  */
 class WebAppInterface(
   private val activity: Activity,
   @Suppress("unused") private val apiBaseUrl: String,
   @Suppress("unused") private val authCookieProvider: () -> String = { "" },
-  private val bannerAdsController: (Boolean) -> Unit = {}
+  private val bannerAdsController: (Boolean) -> Unit = {},
+  private val onOpenExternalUrl: (String) -> Unit = {}
 ) {
 
   @JavascriptInterface
@@ -24,6 +27,16 @@ class WebAppInterface(
   @JavascriptInterface
   fun setBannerAdsEnabled(enabled: Boolean) {
     activity.runOnUiThread { bannerAdsController(enabled) }
+  }
+
+  /**
+   * Open an HTTPS URL in Chrome Custom Tabs (Google OAuth / account picker).
+   * Called from the web app when `signInWithOAuth({ skipBrowserRedirect: true })`.
+   */
+  @JavascriptInterface
+  fun openExternalUrl(url: String) {
+    if (url.isBlank()) return
+    activity.runOnUiThread { onOpenExternalUrl(url) }
   }
 
   @JavascriptInterface

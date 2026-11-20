@@ -193,15 +193,24 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      await supabase.auth.signInWithOAuth({
+      // Android WebView blocks Google's account picker — open OAuth in Chrome Custom Tabs.
+      const bridge = typeof window !== "undefined" ? window.AndroidStreamBridge : undefined;
+      const useNativeBrowser = Boolean(bridge?.isNativeApp?.() && bridge?.openExternalUrl);
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           // Exact path only — must be allow-listed in Supabase → Auth → URL Configuration.
           // Never use localhost here on production; origin comes from the live page URL.
           redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: { prompt: "select_account" },
+          skipBrowserRedirect: useNativeBrowser,
         },
       });
+      if (error) throw error;
+      if (useNativeBrowser && data?.url) {
+        bridge!.openExternalUrl!(data.url);
+      }
     },
     [supabase, enterDemo]
   );
@@ -228,7 +237,10 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         sessionStorage.setItem("gameplay_live_youtube_scope", "1");
       }
 
-      await supabase.auth.signInWithOAuth({
+      const bridge = typeof window !== "undefined" ? window.AndroidStreamBridge : undefined;
+      const useNativeBrowser = Boolean(bridge?.isNativeApp?.() && bridge?.openExternalUrl);
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
@@ -238,8 +250,13 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             prompt: "consent",
             include_granted_scopes: "true",
           },
+          skipBrowserRedirect: useNativeBrowser,
         },
       });
+      if (error) throw error;
+      if (useNativeBrowser && data?.url) {
+        bridge!.openExternalUrl!(data.url);
+      }
       return null;
     },
     [supabase]
