@@ -5,10 +5,12 @@ import { twitchFetch } from "@/lib/twitch";
 import { youtubeFetch } from "@/lib/youtube";
 import {
   DEFAULT_GAMES,
-  YOUTUBE_LIVE_BROAD_QUERY,
+  YOUTUBE_LIVE_SEARCH_BATCHES,
   classifyYoutubeLiveItem,
   gameFromTwitchId,
   twitchGameIdBatch,
+  youtubeLiveBatchForTick,
+  type YoutubeLiveSearchBatch,
 } from "@/lib/default-games";
 import {
   YOUTUBE_SEARCH_LIST_COST,
@@ -30,7 +32,8 @@ function authorized(request: Request) {
 
 /**
  * Quota-safe discovery sync.
- * ?platform=youtube — 1 broad search.list / ~20 min (classify into default games locally)
+ * ?platform=youtube — rotating small search.list batches / ~20 min
+ * ?platform=youtube&refill=1 — all batches once (empty-cache / admin catch-up)
  * ?platform=twitch  — per-game helix/streams / ~5 min
  * (default: both)
  */
@@ -39,7 +42,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const platform = new URL(request.url).searchParams.get("platform") || "all";
+  const url = new URL(request.url);
+  const platform = url.searchParams.get("platform") || "all";
+  const forceRefill = url.searchParams.get("refill") === "1";
   const settings = await getAppSettingsFull();
   const supabase = createServiceClient();
   if (!supabase) {
@@ -53,7 +58,11 @@ export async function GET(request: Request) {
 
   if (platform === "youtube" || platform === "all") {
     try {
-      summary.youtube = await syncYoutubeLive(supabase, settings.youtube_api_key);
+      summary.youtube = await syncYoutubeLive(
+        supabase,
+        settings.youtube_api_key,
+        { forceRefill }
+      );
     } catch (e) {
       console.error("syncYoutubeLive failed", e);
       summary.youtube = {
@@ -88,82 +97,120 @@ export async function GET(request: Request) {
 
 async function syncYoutubeLive(
   supabase: NonNullable<ReturnType<typeof createServiceClient>>,
-  apiKey: string
+  apiKey: string,
+  opts: { forceRefill?: boolean } = {}
 ) {
   if (!apiKey) return { skipped: true, reason: "no youtube key" };
 
-  // Live Now owns the reserved quota slice — do not use "shared" here.
-  const spend = await canSpendUnits(YOUTUBE_SEARCH_LIST_COST, "live");
-  if (!spend.ok) {
-    return {
-      skipped: true,
-      reason: "daily_unit_budget",
-      used: spend.used,
-      budget: spend.budget,
-      kept_existing: true,
-    };
-  }
+  const { count: existingYt } = await supabase
+    .from("cached_streams")
+    .select("*", { count: "exact", head: true })
+    .eq("platform", "youtube")
+    .eq("content_type", "live");
 
-  const q = encodeURIComponent(YOUTUBE_LIVE_BROAD_QUERY);
-  const liveYt = await youtubeFetch(
-    `/search?part=snippet&eventType=live&type=video&videoCategoryId=20&maxResults=50&order=viewCount&q=${q}`,
-    apiKey
-  );
-  await recordLiveSearchListCall(1);
+  const cacheEmpty = !existingYt;
+  const refill = Boolean(opts.forceRefill) || cacheEmpty;
+
+  const batches: YoutubeLiveSearchBatch[] = refill
+    ? [...YOUTUBE_LIVE_SEARCH_BATCHES]
+    : [youtubeLiveBatchForTick()];
 
   const feedRows: Record<string, unknown>[] = [];
   const streamRows: Record<string, unknown>[] = [];
   const now = new Date().toISOString();
-  let unclassified = 0;
   const videoIds: string[] = [];
+  const seenVideo = new Set<string>();
+  const touchedSlugs = new Set<string>();
+  const batchResults: {
+    id: string;
+    items: number;
+    classified: number;
+  }[] = [];
+  let unclassified = 0;
+  let searches = 0;
 
-  for (const item of liveYt.items || []) {
-    const title = String(item.snippet?.title || "");
-    const description = String(item.snippet?.description || "");
-    const game = classifyYoutubeLiveItem(title, description);
-    if (!game) {
-      unclassified += 1;
-      continue;
+  for (const batch of batches) {
+    const spend = await canSpendUnits(YOUTUBE_SEARCH_LIST_COST, "live");
+    if (!spend.ok) {
+      if (!searches) {
+        return {
+          skipped: true,
+          reason: "daily_unit_budget",
+          used: spend.used,
+          budget: spend.budget,
+          kept_existing: true,
+        };
+      }
+      break;
     }
 
-    const externalId = item.id?.videoId;
-    if (!externalId) continue;
-    videoIds.push(externalId);
+    const q = encodeURIComponent(batch.query);
+    const liveYt = await youtubeFetch(
+      `/search?part=snippet&eventType=live&type=video&videoCategoryId=20&maxResults=50&order=viewCount&q=${q}`,
+      apiKey
+    );
+    await recordLiveSearchListCall(1);
+    searches += 1;
 
-    const row = {
-      platform: "youtube",
-      game_slug: game.slug,
-      game_title: game.title,
-      external_id: externalId,
-      title,
-      streamer_name: item.snippet?.channelTitle || "",
-      channel_id: item.snippet?.channelId || "",
-      thumbnail_url:
-        item.snippet?.thumbnails?.high?.url ||
-        item.snippet?.thumbnails?.medium?.url ||
-        "",
-      viewer_count: 0,
-      published_at: item.snippet?.publishedAt || null,
-      language: detectStreamLanguage(title, description),
-      raw: item,
-      fetched_at: now,
-    };
-    feedRows.push(row);
+    let batchClassified = 0;
+    for (const item of liveYt.items || []) {
+      const title = String(item.snippet?.title || "");
+      const description = String(item.snippet?.description || "");
+      const game = classifyYoutubeLiveItem(title, description);
+      if (!game) {
+        unclassified += 1;
+        continue;
+      }
 
-    streamRows.push({
-      game_id: game.id,
-      game_slug: game.slug,
-      game_title: game.title,
-      content_type: "live",
-      platform: "youtube",
-      external_id: externalId,
-      title,
-      streamer_name: item.snippet?.channelTitle || "",
-      thumbnail_url: row.thumbnail_url,
-      viewer_count: 0,
-      published_at: item.snippet?.publishedAt || null,
-      language: row.language,
-      updated_at: now,
+      const externalId = item.id?.videoId;
+      if (!externalId || seenVideo.has(externalId)) continue;
+      seenVideo.add(externalId);
+      videoIds.push(externalId);
+      touchedSlugs.add(game.slug);
+      batchClassified += 1;
+
+      const row = {
+        platform: "youtube",
+        game_slug: game.slug,
+        game_title: game.title,
+        external_id: externalId,
+        title,
+        streamer_name: item.snippet?.channelTitle || "",
+        channel_id: item.snippet?.channelId || "",
+        thumbnail_url:
+          item.snippet?.thumbnails?.high?.url ||
+          item.snippet?.thumbnails?.medium?.url ||
+          "",
+        viewer_count: 0,
+        published_at: item.snippet?.publishedAt || null,
+        language: detectStreamLanguage(title, description),
+        raw: item,
+        fetched_at: now,
+      };
+      feedRows.push(row);
+
+      streamRows.push({
+        game_id: game.id,
+        game_slug: game.slug,
+        game_title: game.title,
+        content_type: "live",
+        platform: "youtube",
+        external_id: externalId,
+        title,
+        streamer_name: item.snippet?.channelTitle || "",
+        thumbnail_url: row.thumbnail_url,
+        viewer_count: 0,
+        published_at: item.snippet?.publishedAt || null,
+        language: row.language,
+        updated_at: now,
+      });
+    }
+
+    for (const slug of batch.slugs) touchedSlugs.add(slug);
+    batchResults.push({
+      id: batch.id,
+      items: liveYt.items?.length || 0,
+      classified: batchClassified,
     });
   }
 
@@ -182,7 +229,9 @@ async function syncYoutubeLive(
         for (const v of details.items || []) {
           const id = String(v.id || "");
           const n = Number(
-            v.liveStreamingDetails?.concurrentViewers || v.statistics?.viewCount || 0
+            v.liveStreamingDetails?.concurrentViewers ||
+              v.statistics?.viewCount ||
+              0
           );
           if (id && Number.isFinite(n)) viewers.set(id, n);
         }
@@ -203,26 +252,31 @@ async function syncYoutubeLive(
   // Never wipe a healthy cache when this tick classified nothing.
   if (!streamRows.length) {
     return {
-      items: liveYt.items?.length || 0,
+      items: batchResults.reduce((n, b) => n + b.items, 0),
       classified: 0,
       unclassified,
+      batches: batchResults,
+      refill,
       kept_existing: true,
-      search_cost_units: 100,
+      search_cost_units: searches * YOUTUBE_SEARCH_LIST_COST,
     };
   }
 
-  // Replace YouTube live rows for default games only (after a successful classify)
+  const slugs = [...touchedSlugs];
+
+  // Replace only the games this tick refreshed (keep other batches intact)
   await supabase
     .from("cached_streams")
     .delete()
     .eq("platform", "youtube")
     .eq("content_type", "live")
-    .in(
-      "game_slug",
-      DEFAULT_GAMES.map((g) => g.slug)
-    );
+    .in("game_slug", slugs);
 
-  await supabase.from("cached_live_feeds").delete().eq("platform", "youtube");
+  await supabase
+    .from("cached_live_feeds")
+    .delete()
+    .eq("platform", "youtube")
+    .in("game_slug", slugs);
 
   if (feedRows.length) {
     const { error } = await supabase.from("cached_live_feeds").upsert(feedRows, {
@@ -236,10 +290,13 @@ async function syncYoutubeLive(
   }
 
   return {
-    items: liveYt.items?.length || 0,
+    items: batchResults.reduce((n, b) => n + b.items, 0),
     classified: streamRows.length,
     unclassified,
-    search_cost_units: 100,
+    batches: batchResults,
+    refill,
+    game_slugs: slugs,
+    search_cost_units: searches * YOUTUBE_SEARCH_LIST_COST,
   };
 }
 

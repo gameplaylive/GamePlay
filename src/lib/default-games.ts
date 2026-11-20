@@ -201,9 +201,60 @@ export const DEFAULT_GAMES: DefaultGameDef[] = [
   },
 ];
 
-/** Single YouTube search.list query covering all default titles (OR). Still 1 call / 20 min. */
-export const YOUTUBE_LIVE_BROAD_QUERY =
-  'BGMI|"Free Fire"|Valorant|GTA|"GTA V"|"GTA 6"|GTAVI|"Grand Theft Auto"|Minecraft|Roblox|CS2|"Dota 2"|Fortnite|"Call of Duty"|Warzone|CODM|"Euro Truck Simulator 2"|ETS2|"Euro Truck"';
+/**
+ * YouTube search.list rejects oversized OR queries (returns 0 items with no error).
+ * Keep each batch short: single-token ORs are fine; multi-word titles need their own call.
+ * Cron runs one batch / 20 min; empty-cache refill may run all batches once.
+ */
+export type YoutubeLiveSearchBatch = {
+  id: string;
+  query: string;
+  /** Cache rows replaced when this batch succeeds */
+  slugs: DefaultGameSlug[];
+};
+
+export const YOUTUBE_LIVE_SEARCH_BATCHES: YoutubeLiveSearchBatch[] = [
+  {
+    id: "tokens-a",
+    query: "BGMI|Valorant|Minecraft|Roblox|CS2",
+    slugs: ["bgmi", "valorant", "minecraft", "roblox", "cs2"],
+  },
+  {
+    id: "tokens-b",
+    query: "Fortnite|Warzone|CODM|ETS2|GTA",
+    slugs: ["fortnite", "call-of-duty", "euro-truck-simulator-2", "gta"],
+  },
+  {
+    id: "free-fire",
+    query: '"Free Fire"',
+    slugs: ["free-fire"],
+  },
+  {
+    id: "dota-2",
+    query: '"Dota 2"',
+    slugs: ["dota-2"],
+  },
+  {
+    id: "cod-phrase",
+    query: '"Call of Duty"',
+    slugs: ["call-of-duty"],
+  },
+];
+
+/** @deprecated Mega-OR returns 0 from YouTube — use YOUTUBE_LIVE_SEARCH_BATCHES */
+export const YOUTUBE_LIVE_BROAD_QUERY = YOUTUBE_LIVE_SEARCH_BATCHES.map(
+  (b) => b.query
+).join("|");
+
+/** Rotate which batch the Live cron fetches this tick. */
+export function youtubeLiveBatchForTick(
+  nowMs = Date.now()
+): YoutubeLiveSearchBatch {
+  const periodMs = 20 * 60 * 1000;
+  const idx =
+    Math.floor(nowMs / periodMs) % YOUTUBE_LIVE_SEARCH_BATCHES.length;
+  return YOUTUBE_LIVE_SEARCH_BATCHES[idx]!;
+}
 
 /** All signed-in users share the same following cap (Pro paywall removed for launch). */
 export const FAVORITE_LIMITS = {
