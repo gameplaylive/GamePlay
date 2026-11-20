@@ -17,7 +17,6 @@ type Tab =
   | "tournaments"
   | "squads"
   | "push"
-  | "later"
   | "analytics"
   | "ads"
   | "overview"
@@ -202,10 +201,6 @@ export function AdminDashboard() {
     { id: "tournaments", label: "Tournaments & Cups" },
     { id: "squads", label: "Squad Finder" },
     { id: "push", label: "Push Notifications" },
-    { id: "later", label: "Later / Phase 2" },
-  ];
-
-  const phase2Tabs: { id: Tab; label: string }[] = [
     { id: "analytics", label: "Analytics" },
     { id: "ads", label: "Ad Earnings" },
     { id: "overview", label: "Sync" },
@@ -239,9 +234,7 @@ export function AdminDashboard() {
             onClick={() => setTab(t.id)}
             className={cn(
               "shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold",
-              tab === t.id || (t.id === "later" && phase2Tabs.some((p) => p.id === tab))
-                ? "bg-gold text-obsidian"
-                : "border border-border-glow text-muted"
+              tab === t.id ? "bg-gold text-obsidian" : "border border-border-glow text-muted"
             )}
           >
             {t.label}
@@ -294,9 +287,8 @@ export function AdminDashboard() {
       {tab === "tournaments" && (
         <div className="space-y-3">
           <p className="text-sm text-muted">
-            Create a cup and paste a YouTube/Twitch URL.{" "}
-            <span className="text-white">Watch Live</span> only appears when that channel is actually
-            broadcasting — no sample or offline links.
+            Public Cups auto-pulls <span className="text-white">live YouTube &amp; Twitch</span>{" "}
+            streams whose titles look like tournaments/cups, plus any cups you add below.
           </p>
           <AdminTournamentsManager embedded />
         </div>
@@ -334,34 +326,6 @@ export function AdminDashboard() {
       )}
 
       {tab === "push" && <AdminPushPanel />}
-
-      {tab === "later" && (
-        <div className="space-y-4">
-          <p className="text-sm text-muted">
-            Phase 2 / ops tools — sponsors, boosts, vault, and deep analytics live here so the main
-            tabs stay simple.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {phase2Tabs.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTab(t.id)}
-                className="rounded-full border border-border-glow px-4 py-2 text-sm font-semibold text-muted hover:text-white"
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-5 text-sm text-muted">
-            <p className="font-semibold text-white/80">Later / Phase 2</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              <li>Sponsor / boost placements on homepage cards</li>
-              <li>Squad Finder paid pin (kept off — app is free)</li>
-            </ul>
-          </div>
-        </div>
-      )}
 
       {tab === "analytics" && <AdminAnalyticsPanel />}
 

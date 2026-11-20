@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { useApp } from "@/components/providers/AppProviders";
 import { BrandLogo } from "@/components/BrandLogo";
-import { DEFAULT_GAMES } from "@/lib/default-games";
+import { DEFAULT_GAMES, sortByDefaultGameOrder } from "@/lib/default-games";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +28,7 @@ export function OnboardingModal() {
         });
       }
     }
-    return [...bySlug.values()].sort((a, b) => a.title.localeCompare(b.title));
+    return sortByDefaultGameOrder([...bySlug.values()]);
   })();
 
   function toggle(slug: string) {

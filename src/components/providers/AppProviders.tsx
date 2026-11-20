@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { AppSettingsPublic, Game, Profile, UserFavorite } from "@/lib/types";
 import { DEMO_PROFILE, MOCK_GAMES, MOCK_SETTINGS } from "@/lib/mock-data";
-import { DEFAULT_GAMES, DEFAULT_GAME_SLUGS } from "@/lib/default-games";
+import { DEFAULT_GAMES, DEFAULT_GAME_SLUGS, sortByDefaultGameOrder } from "@/lib/default-games";
 import { createClient } from "@/lib/supabase/client";
 import { OnboardingModal } from "@/components/auth/OnboardingModal";
 import { AdSenseScript } from "@/components/AdSenseScript";
@@ -64,7 +64,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
           });
         }
       }
-      return [...bySlug.values()].sort((a, b) => a.title.localeCompare(b.title));
+      return sortByDefaultGameOrder([...bySlug.values()]);
     };
 
     if (!supabase) {

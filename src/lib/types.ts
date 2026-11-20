@@ -135,7 +135,7 @@ export interface FavoriteGamerStatus extends UserFavorite {
 export type HomeTab = "live" | "trending" | "favorites";
 
 export type TournamentStatus = "LIVE" | "UPCOMING" | "ENDED";
-export type TournamentSource = "pandascore" | "custom";
+export type TournamentSource = "pandascore" | "custom" | "youtube" | "twitch";
 
 export interface CustomTournament {
   id: string;

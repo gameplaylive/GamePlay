@@ -13,7 +13,7 @@ import { CommunityCreatorsRow } from "@/components/feed/CommunityCreatorsRow";
 import { SquadFinder } from "@/components/squads/SquadFinder";
 import { useApp } from "@/components/providers/AppProviders";
 import type { CachedStream, FavoriteGamerStatus, HomeTab } from "@/lib/types";
-import { DEFAULT_GAMES } from "@/lib/default-games";
+import { DEFAULT_GAMES, sortByDefaultGameOrder } from "@/lib/default-games";
 import { LANGUAGES, cn, formatViewers } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
@@ -33,30 +33,6 @@ export function HomeFeed() {
   const [loadingFavs, setLoadingFavs] = useState(false);
   const [squadCount, setSquadCount] = useState(0);
   const liveScrollRef = useRef<HTMLDivElement>(null);
-
-  // Nested Live Now list keeps its own scroll; at the top/bottom, chain the
-  // wheel to the page so sections below (and above) stay reachable.
-  useEffect(() => {
-    const el = liveScrollRef.current;
-    if (!el) return;
-
-    const onWheel = (e: WheelEvent) => {
-      const { scrollTop, scrollHeight, clientHeight } = el;
-      const maxScroll = Math.max(0, scrollHeight - clientHeight);
-      const atTop = scrollTop <= 0;
-      const atBottom = scrollTop >= maxScroll - 1;
-      const goingDown = e.deltaY > 0;
-      const goingUp = e.deltaY < 0;
-
-      if ((goingDown && atBottom) || (goingUp && atTop)) {
-        e.preventDefault();
-        window.scrollBy({ top: e.deltaY, left: 0, behavior: "auto" });
-      }
-    };
-
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, [tab, streams.length]);
 
   useEffect(() => {
     if (profile?.preferred_language) setLanguage(profile.preferred_language);
@@ -239,7 +215,7 @@ export function HomeFeed() {
         });
       }
     }
-    return [...bySlug.values()].sort((a, b) => a.title.localeCompare(b.title));
+    return sortByDefaultGameOrder([...bySlug.values()]);
   })();
 
   const pills = [

@@ -11,6 +11,18 @@ export interface AnalyticsOverview {
   total_watch_sessions: number;
 }
 
+export interface TrafficOverview {
+  views_today: number;
+  views_7d: number;
+  unique_today: number;
+  unique_7d: number;
+  web_views_7d: number;
+  android_views_7d: number;
+  signed_in_views_7d: number;
+  push_devices: number;
+  top_paths: { path: string; views: number }[];
+}
+
 export interface ProSubscriberRow {
   id: string;
   email: string | null;
@@ -59,6 +71,7 @@ export interface GameEngagementRow {
 
 export interface AdminAnalyticsPayload {
   overview: AnalyticsOverview;
+  traffic: TrafficOverview;
   subscribers: ProSubscriberRow[];
   top_creators: CreatorLeaderboardRow[];
   top_live: StreamLeaderboardRow[];
@@ -346,19 +359,100 @@ async function fetchProxyLeaderboards(service: SupabaseClient): Promise<{
   return { top_creators, top_live, top_videos, game_engagement };
 }
 
+async function fetchTraffic(service: SupabaseClient): Promise<TrafficOverview> {
+  const empty: TrafficOverview = {
+    views_today: 0,
+    views_7d: 0,
+    unique_today: 0,
+    unique_7d: 0,
+    web_views_7d: 0,
+    android_views_7d: 0,
+    signed_in_views_7d: 0,
+    push_devices: 0,
+    top_paths: [],
+  };
+
+  const start7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const startDay = new Date();
+  startDay.setUTCHours(0, 0, 0, 0);
+  const startToday = startDay.toISOString();
+
+  const [{ data: rows, error }, pushCount] = await Promise.all([
+    service
+      .from("analytics_page_views")
+      .select("path, client, anon_id, user_id, created_at")
+      .gte("created_at", start7)
+      .order("created_at", { ascending: false })
+      .limit(5000),
+    service
+      .from("push_devices")
+      .select("*", { count: "exact", head: true })
+      .eq("enabled", true),
+  ]);
+
+  if (error || !rows) {
+    if (!isMissingRelation(error)) console.error("analytics_page_views", error?.message);
+    empty.push_devices = pushCount.count ?? 0;
+    return empty;
+  }
+
+  const uniqueToday = new Set<string>();
+  const unique7 = new Set<string>();
+  const pathCounts = new Map<string, number>();
+  let viewsToday = 0;
+  let views7 = 0;
+  let web7 = 0;
+  let android7 = 0;
+  let signed7 = 0;
+
+  for (const r of rows) {
+    views7 += 1;
+    const key = r.user_id || r.anon_id || `row-${views7}`;
+    unique7.add(String(key));
+    if (r.client === "android") android7 += 1;
+    else web7 += 1;
+    if (r.user_id) signed7 += 1;
+    const path = String(r.path || "/").split("?")[0] || "/";
+    pathCounts.set(path, (pathCounts.get(path) || 0) + 1);
+    if (String(r.created_at) >= startToday) {
+      viewsToday += 1;
+      uniqueToday.add(String(key));
+    }
+  }
+
+  const top_paths = [...pathCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([path, views]) => ({ path, views }));
+
+  return {
+    views_today: viewsToday,
+    views_7d: views7,
+    unique_today: uniqueToday.size,
+    unique_7d: unique7.size,
+    web_views_7d: web7,
+    android_views_7d: android7,
+    signed_in_views_7d: signed7,
+    push_devices: pushCount.count ?? 0,
+    top_paths,
+  };
+}
+
 /** Server-side aggregator used by /api/admin/analytics */
 export async function loadAdminAnalytics(
   service: SupabaseClient
 ): Promise<AdminAnalyticsPayload> {
-  const [{ overview }, subscribers, telemetry] = await Promise.all([
+  const [{ overview }, subscribers, telemetry, traffic] = await Promise.all([
     fetchOverview(service),
     fetchSubscribers(service),
     fetchTelemetryLeaderboards(service),
+    fetchTraffic(service),
   ]);
 
   if (telemetry.hasTelemetry) {
     return {
       overview,
+      traffic,
       subscribers,
       top_creators: telemetry.top_creators,
       top_live: telemetry.top_live,
@@ -371,6 +465,7 @@ export async function loadAdminAnalytics(
   const proxy = await fetchProxyLeaderboards(service);
   return {
     overview,
+    traffic,
     subscribers,
     ...proxy,
     source: "proxy",

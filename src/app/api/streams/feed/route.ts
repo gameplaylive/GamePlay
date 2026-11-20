@@ -22,8 +22,16 @@ export async function GET() {
     return NextResponse.json({ streams: [], source: "error", error: error.message });
   }
 
-  return NextResponse.json({
-    streams: data || [],
-    source: "supabase",
-  });
+  return NextResponse.json(
+    {
+      streams: data || [],
+      source: "supabase",
+    },
+    {
+      headers: {
+        // Edge/browser can reuse briefly — Live sync is every few minutes.
+        "Cache-Control": "public, s-maxage=45, stale-while-revalidate=120",
+      },
+    }
+  );
 }

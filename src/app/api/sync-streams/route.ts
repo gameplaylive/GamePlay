@@ -13,7 +13,8 @@ import {
 import {
   YOUTUBE_SEARCH_LIST_COST,
   canSpendUnits,
-  recordSearchListCall,
+  recordLightUnits,
+  recordLiveSearchListCall,
 } from "@/lib/youtube-quota";
 import { detectStreamLanguage } from "@/lib/utils";
 
@@ -29,8 +30,8 @@ function authorized(request: Request) {
 
 /**
  * Quota-safe discovery sync.
- * ?platform=youtube — 1 broad search.list / ~20 min (classify into 10 games locally)
- * ?platform=twitch  — 1 batched helix/streams for all top-10 game_ids / ~3 min
+ * ?platform=youtube — 1 broad search.list / ~20 min (classify into default games locally)
+ * ?platform=twitch  — per-game helix/streams / ~5 min
  * (default: both)
  */
 export async function GET(request: Request) {
@@ -51,14 +52,30 @@ export async function GET(request: Request) {
   const summary: Record<string, unknown> = { platform };
 
   if (platform === "youtube" || platform === "all") {
-    summary.youtube = await syncYoutubeLive(supabase, settings.youtube_api_key);
+    try {
+      summary.youtube = await syncYoutubeLive(supabase, settings.youtube_api_key);
+    } catch (e) {
+      console.error("syncYoutubeLive failed", e);
+      summary.youtube = {
+        error: e instanceof Error ? e.message : "youtube sync failed",
+        kept_existing: true,
+      };
+    }
   }
   if (platform === "twitch" || platform === "all") {
-    summary.twitch = await syncTwitchLive(
-      supabase,
-      settings.twitch_client_id,
-      settings.twitch_client_secret
-    );
+    try {
+      summary.twitch = await syncTwitchLive(
+        supabase,
+        settings.twitch_client_id,
+        settings.twitch_client_secret
+      );
+    } catch (e) {
+      console.error("syncTwitchLive failed", e);
+      summary.twitch = {
+        error: e instanceof Error ? e.message : "twitch sync failed",
+        kept_existing: true,
+      };
+    }
   }
 
   await supabase
@@ -83,6 +100,7 @@ async function syncYoutubeLive(
       reason: "daily_unit_budget",
       used: spend.used,
       budget: spend.budget,
+      kept_existing: true,
     };
   }
 
@@ -91,12 +109,13 @@ async function syncYoutubeLive(
     `/search?part=snippet&eventType=live&type=video&videoCategoryId=20&maxResults=50&order=viewCount&q=${q}`,
     apiKey
   );
-  await recordSearchListCall(1);
+  await recordLiveSearchListCall(1);
 
   const feedRows: Record<string, unknown>[] = [];
   const streamRows: Record<string, unknown>[] = [];
   const now = new Date().toISOString();
   let unclassified = 0;
+  const videoIds: string[] = [];
 
   for (const item of liveYt.items || []) {
     const title = String(item.snippet?.title || "");
@@ -109,6 +128,7 @@ async function syncYoutubeLive(
 
     const externalId = item.id?.videoId;
     if (!externalId) continue;
+    videoIds.push(externalId);
 
     const row = {
       platform: "youtube",
@@ -147,7 +167,51 @@ async function syncYoutubeLive(
     });
   }
 
-  // Replace YouTube live rows for default games only
+  // Cheap concurrent viewer pass (videos.list ≈ 1 unit)
+  if (videoIds.length) {
+    try {
+      const light = await canSpendUnits(1, "live");
+      if (light.ok) {
+        const ids = videoIds.slice(0, 50).join(",");
+        const details = await youtubeFetch(
+          `/videos?part=liveStreamingDetails,statistics&id=${encodeURIComponent(ids)}`,
+          apiKey
+        );
+        await recordLightUnits(1);
+        const viewers = new Map<string, number>();
+        for (const v of details.items || []) {
+          const id = String(v.id || "");
+          const n = Number(
+            v.liveStreamingDetails?.concurrentViewers || v.statistics?.viewCount || 0
+          );
+          if (id && Number.isFinite(n)) viewers.set(id, n);
+        }
+        for (const row of feedRows) {
+          const id = String(row.external_id || "");
+          if (viewers.has(id)) row.viewer_count = viewers.get(id);
+        }
+        for (const row of streamRows) {
+          const id = String(row.external_id || "");
+          if (viewers.has(id)) row.viewer_count = viewers.get(id);
+        }
+      }
+    } catch (e) {
+      console.error("youtube viewers enrich failed", e);
+    }
+  }
+
+  // Never wipe a healthy cache when this tick classified nothing.
+  if (!streamRows.length) {
+    return {
+      items: liveYt.items?.length || 0,
+      classified: 0,
+      unclassified,
+      kept_existing: true,
+      search_cost_units: 100,
+    };
+  }
+
+  // Replace YouTube live rows for default games only (after a successful classify)
   await supabase
     .from("cached_streams")
     .delete()
@@ -244,6 +308,10 @@ async function syncTwitchLive(
         updated_at: now,
       });
     }
+  }
+
+  if (!streamRows.length) {
+    return { items: 0, kept_existing: true, batched_game_ids: gameIds.length };
   }
 
   await supabase

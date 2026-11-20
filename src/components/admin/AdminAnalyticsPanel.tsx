@@ -10,7 +10,7 @@ import {
 } from "@/lib/admin-analytics";
 import { cn } from "@/lib/utils";
 
-type AnalyticsTab = "overview" | "subscribers" | "content" | "games";
+type AnalyticsTab = "overview" | "traffic" | "subscribers" | "content" | "games";
 
 function StatCard({
   label,
@@ -145,6 +145,7 @@ export function AdminAnalyticsPanel() {
 
   const tabs: { id: AnalyticsTab; label: string }[] = [
     { id: "overview", label: "User Overview" },
+    { id: "traffic", label: "Visitors & Engagement" },
     { id: "subscribers", label: "Subscribers Menu" },
     { id: "content", label: "Most Watched" },
     { id: "games", label: "Game Engagement" },
@@ -157,7 +158,7 @@ export function AdminAnalyticsPanel() {
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-cyan">Analytics</p>
           <h2 className="font-display text-2xl font-bold text-white">Control Center</h2>
           <p className="mt-1 text-sm text-muted">
-            Users, Creator Pro subscribers, watch leaderboards, and game-wise durations.
+            Users, site/app visitors, watch leaderboards, and game-wise engagement.
           </p>
         </div>
         <button
@@ -219,6 +220,46 @@ export function AdminAnalyticsPanel() {
                 value={formatWatchDuration(data.overview.total_watch_seconds)}
                 hint={`${data.overview.total_watch_sessions} sessions`}
               />
+            </div>
+          )}
+
+          {tab === "traffic" && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <StatCard
+                  label="Visitors today"
+                  value={data.traffic.unique_today}
+                  hint={`${data.traffic.views_today} page views`}
+                />
+                <StatCard
+                  label="Visitors (7d)"
+                  value={data.traffic.unique_7d}
+                  hint={`${data.traffic.views_7d} page views`}
+                />
+                <StatCard
+                  label="Web views (7d)"
+                  value={data.traffic.web_views_7d}
+                  hint={`${data.traffic.signed_in_views_7d} signed-in`}
+                />
+                <StatCard
+                  label="Android views (7d)"
+                  value={data.traffic.android_views_7d}
+                  hint={`${data.traffic.push_devices} push devices`}
+                />
+              </div>
+              <section className="space-y-2">
+                <h3 className="font-display text-lg font-bold">Top pages (7d)</h3>
+                <LeaderTable
+                  columns={["Path", "Views"]}
+                  empty="No page views yet — open the site/app after applying the analytics migration."
+                  rows={data.traffic.top_paths.map((p) => [
+                    <span key={p.path} className="font-mono text-xs text-white/90">
+                      {p.path}
+                    </span>,
+                    <span key={`${p.path}-v`}>{p.views}</span>,
+                  ])}
+                />
+              </section>
             </div>
           )}
 

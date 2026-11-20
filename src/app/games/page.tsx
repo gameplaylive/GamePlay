@@ -4,13 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { AdBanner } from "@/components/AdBanner";
 import { useApp } from "@/components/providers/AppProviders";
-import { DEFAULT_GAMES } from "@/lib/default-games";
+import { DEFAULT_GAMES, sortByDefaultGameOrder } from "@/lib/default-games";
 
 const GUIDES: Record<string, string> = {
+  gta: "GTA V, GTA VI, roleplay, heists — all Grand Theft Auto lives in one place.",
   bgmi: "India’s battlegrounds — scrims, rank push, and tournament watch parties.",
   "free-fire": "Fast mobile battle royale lives popular across India and SEA.",
   valorant: "Tactical FPS ranked grind, VCT watchalongs, and aim training.",
-  "gta-v": "Roleplay cities, heists, and chaos from Twitch & YouTube creators.",
   minecraft: "SMP survival, hardcore challenges, and creative showcases.",
   roblox: "Experiences from Brookhaven to Blox Fruits — creator-led lives.",
   cs2: "Competitive Counter-Strike faceit and tournament streams.",
@@ -37,7 +37,7 @@ export default function GamesPage() {
         });
       }
     }
-    return [...bySlug.values()].sort((a, b) => a.title.localeCompare(b.title));
+    return sortByDefaultGameOrder([...bySlug.values()]);
   })();
 
   return (

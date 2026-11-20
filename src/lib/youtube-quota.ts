@@ -147,12 +147,24 @@ async function bumpQuota(searchDelta: number, unitsDelta: number) {
     .eq("day", day);
 }
 
-/** Increment search.list counter (+100 estimated units by default). */
+/** Increment shared search.list counter (+100 estimated units by default). */
 export async function recordSearchListCall(
   count = 1,
   unitsPerCall = YOUTUBE_SEARCH_LIST_COST
 ) {
   await bumpQuota(count, count * unitsPerCall);
+}
+
+/**
+ * Live Now cron search.list — counts units toward the daily budget but does
+ * NOT increment search_list_calls (keeps the soft cap free for favorites /
+ * tournament checks).
+ */
+export async function recordLiveSearchListCall(
+  count = 1,
+  unitsPerCall = YOUTUBE_SEARCH_LIST_COST
+) {
+  await bumpQuota(0, count * unitsPerCall);
 }
 
 /** Increment low-cost calls (channels.list / playlistItems / videos.list ≈ 1 unit each). */

@@ -14,11 +14,12 @@ export interface DefaultGameDef {
   classifyKeywords: string[];
 }
 
+/** Display / pill order — first items appear first (not alphabetical). */
 export const DEFAULT_GAME_SLUGS = [
+  "gta",
   "bgmi",
   "free-fire",
   "valorant",
-  "gta-v",
   "minecraft",
   "roblox",
   "cs2",
@@ -31,6 +32,35 @@ export const DEFAULT_GAME_SLUGS = [
 export type DefaultGameSlug = (typeof DEFAULT_GAME_SLUGS)[number];
 
 export const DEFAULT_GAMES: DefaultGameDef[] = [
+  {
+    // Single GTA bucket — GTA V + GTA VI Twitch categories + all title variants
+    id: "11111111-1111-1111-1111-111111111101",
+    title: "GTA",
+    slug: "gta",
+    cover_image: "https://static-cdn.jtvnw.net/ttv-boxart/1867279146_IGDB-285x380.jpg",
+    twitch_game_id: "1867279146", // Grand Theft Auto VI
+    twitch_game_ids: ["32982", "1867279146"], // V + VI
+    youtube_query: "GTA",
+    classifyKeywords: [
+      "gta",
+      "gta 6",
+      "gta6",
+      "gta vi",
+      "gtavi",
+      "gta v",
+      "gta 5",
+      "gta5",
+      "gtav",
+      "grand theft auto",
+      "grand theft auto vi",
+      "grand theft auto 6",
+      "grand theft auto v",
+      "nopixel",
+      "gta rp",
+      "gta roleplay",
+      "gta six",
+    ],
+  },
   {
     id: "11111111-1111-1111-1111-111111111103",
     title: "BGMI",
@@ -75,15 +105,6 @@ export const DEFAULT_GAMES: DefaultGameDef[] = [
     twitch_game_id: "516575",
     youtube_query: "Valorant",
     classifyKeywords: ["valorant", "val ranked"],
-  },
-  {
-    id: "11111111-1111-1111-1111-111111111101",
-    title: "GTA V",
-    slug: "gta-v",
-    cover_image: "https://static-cdn.jtvnw.net/ttv-boxart/32982_IGDB-285x380.jpg",
-    twitch_game_id: "32982",
-    youtube_query: "GTA V",
-    classifyKeywords: ["gta v", "gta 5", "gta5", "gtav", "nopixel", "roleplay gta"],
   },
   {
     id: "11111111-1111-1111-1111-111111111102",
@@ -182,7 +203,7 @@ export const DEFAULT_GAMES: DefaultGameDef[] = [
 
 /** Single YouTube search.list query covering all default titles (OR). Still 1 call / 20 min. */
 export const YOUTUBE_LIVE_BROAD_QUERY =
-  'BGMI|"Free Fire"|Valorant|"GTA V"|Minecraft|Roblox|CS2|"Dota 2"|Fortnite|"Call of Duty"|Warzone|CODM|"Euro Truck Simulator 2"|ETS2|"Euro Truck"';
+  'BGMI|"Free Fire"|Valorant|GTA|"GTA V"|"GTA 6"|GTAVI|"Grand Theft Auto"|Minecraft|Roblox|CS2|"Dota 2"|Fortnite|"Call of Duty"|Warzone|CODM|"Euro Truck Simulator 2"|ETS2|"Euro Truck"';
 
 /** All signed-in users share the same following cap (Pro paywall removed for launch). */
 export const FAVORITE_LIMITS = {
@@ -200,6 +221,19 @@ export const YOUTUBE_SEARCH_SOFT_CAP = 20;
 
 /** Max YouTube pinned creators refreshed in one cron tick (oldest-stale first). */
 export const YOUTUBE_PIN_REFRESH_MAX_PER_RUN = 12;
+
+/** Sort games by DEFAULT_GAME_SLUGS order (unknown slugs last, A–Z). */
+export function sortByDefaultGameOrder<T extends { slug: string; title?: string }>(
+  games: T[]
+): T[] {
+  const rank = new Map((DEFAULT_GAME_SLUGS as readonly string[]).map((s, i) => [s, i]));
+  return [...games].sort((a, b) => {
+    const ra = rank.has(a.slug) ? (rank.get(a.slug) as number) : 999;
+    const rb = rank.has(b.slug) ? (rank.get(b.slug) as number) : 999;
+    if (ra !== rb) return ra - rb;
+    return String(a.title || a.slug).localeCompare(String(b.title || b.slug));
+  });
+}
 
 /** All Twitch category ids to batch in one /helix/streams request. */
 export function twitchGameIdBatch(): string[] {
@@ -228,6 +262,9 @@ export function classifyYoutubeLiveItem(title: string, description = ""): Defaul
     for (const kw of game.classifyKeywords) {
       if (hay.includes(kw.toLowerCase())) score += kw.length;
     }
+    // Light boost for exact youtube_query / title tokens
+    if (hay.includes(game.youtube_query.toLowerCase())) score += game.youtube_query.length;
+    if (hay.includes(game.title.toLowerCase())) score += Math.min(game.title.length, 8);
     if (score > bestScore) {
       bestScore = score;
       best = game;

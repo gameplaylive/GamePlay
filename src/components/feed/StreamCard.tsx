@@ -61,7 +61,6 @@ export function StreamCard({ stream }: { stream: CachedStream }) {
             fill
             className="object-cover transition duration-500 group-hover:scale-[1.06]"
             sizes="(max-width:768px) 50vw, 33vw"
-            unoptimized
           />
           {/* Light bottom fade only — keep most of the thumbnail clear */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black/80 via-black/35 to-transparent" />

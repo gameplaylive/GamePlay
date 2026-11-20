@@ -22,7 +22,7 @@ type ExecutionContextLike = {
  */
 const CRON_PATHS: Record<string, string[]> = {
   "*/20 * * * *": ["/api/sync-streams?platform=youtube"],
-  "*/3 * * * *": ["/api/sync-streams?platform=twitch"],
+  "*/5 * * * *": ["/api/sync-streams?platform=twitch"],
   "0 */6 * * *": ["/api/sync-trending"],
   "*/10 * * * *": [
     "/api/cron/check-favorite-live?platform=all",
