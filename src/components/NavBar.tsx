@@ -87,7 +87,7 @@ function NavInner() {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-white/5 bg-[#07090f]/80 backdrop-blur-2xl md:hidden">
-        <div className="flex h-12 w-full max-w-[100vw] items-center gap-1 overflow-hidden px-2">
+        <div className="flex h-12 w-full max-w-[100vw] items-center gap-1 px-2">
           <div className="min-w-0 flex-1 overflow-hidden">
             <BrandLogo size="xs" withWordmark priority className="!h-7 !max-w-[7rem]" />
           </div>
