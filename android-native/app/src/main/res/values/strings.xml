@@ -18,5 +18,6 @@
 
     Do NOT ship a Play release still using ca-app-pub-3940256099942544/6300978111.
   -->
-  <string name="admob_banner_unit_id">ca-app-pub-5165582915599822/2541027023</string>
+  <!-- Must match AdMob banner unit + admin vault admob_banner_unit_id -->
+  <string name="admob_banner_unit_id">ca-app-pub-9916342177645213/3767011618</string>
 </resources>

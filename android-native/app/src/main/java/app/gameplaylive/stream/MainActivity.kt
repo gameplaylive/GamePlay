@@ -49,6 +49,8 @@ class MainActivity : AppCompatActivity() {
     val adView = findViewById<AdView>(R.id.adView)
     adMob = AdMobManager(this, adView)
     adMob.initialize()
+    // Don't wait for WebView JS — banner stayed GONE forever if the bridge sync raced/failed.
+    adMob.setBannerAdsEnabled(true)
 
     splashLogo.animate()
       .scaleX(1.06f)
@@ -75,7 +77,11 @@ class MainActivity : AppCompatActivity() {
       mediaPlaybackRequiresUserGesture = false
       mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
       // Helps some Google/account pages; Custom Tabs still used for OAuth.
-      userAgentString = userAgentString.replace("; wv", "")
+      // Tag UA so web can detect the shell even if the JS bridge is late.
+      val baseUa = userAgentString.replace("; wv", "")
+      userAgentString =
+        if (baseUa.contains("GameplayLiveAndroid")) baseUa
+        else "$baseUa GameplayLiveAndroid/1.0"
       setSupportMultipleWindows(false)
     }
     webView.webChromeClient = WebChromeClient()

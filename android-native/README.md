@@ -9,7 +9,7 @@ Native shell that hosts the Next.js UI, encodes the phone screen → **YouTube R
 | Chrome / laptop / mobile browser / PWA | **AdSense** (`AdBanner.tsx`) |
 | This Android WebView app | **AdMob** sticky banner under the WebView |
 
-AdSense is **not** loaded inside the WebView (policy). The web app calls `AndroidStreamBridge.setBannerAdsEnabled(true|false)` from ads settings. AdMob banners stay outside the player.
+AdSense is **not** loaded inside the WebView (policy). The native shell enables the sticky AdMob banner on launch; the web app can still call `AndroidStreamBridge.setBannerAdsEnabled(true|false)` from ads settings. AdMob banners stay outside the player (under the WebView).
 
 ### AdMob setup (before Play Store)
 

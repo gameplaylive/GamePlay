@@ -34,9 +34,10 @@
     android:supportsRtl="true"
     android:usesCleartextTraffic="false">
 
+    <!-- Must match AdMob console app + admin vault admob_app_id -->
     <meta-data
       android:name="com.google.android.gms.ads.APPLICATION_ID"
-      android:value="ca-app-pub-5165582915599822~2213723962" />
+      android:value="ca-app-pub-9916342177645213~6668120089" />
 
     <activity
       android:name=".MainActivity"

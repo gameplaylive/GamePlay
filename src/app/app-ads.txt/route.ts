@@ -8,21 +8,28 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   const settings = await getAppSettingsFull();
-  const raw =
+  const adsenseRaw =
     settings.adsense_publisher_id?.trim() ||
     process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() ||
     "ca-pub-5165582915599822";
-  const pub = raw.replace(/^ca-/i, "");
+  // AdMob app id is ca-app-pub-########~… — authorize that publisher too.
+  const admobApp = settings.admob_app_id?.trim() || "";
+  const admobPubMatch = admobApp.match(/ca-app-pub-(\d+)/i);
+
+  const pubs = new Set<string>();
+  const adsensePub = adsenseRaw.replace(/^ca-/i, "");
+  if (adsensePub.startsWith("pub-") && !adsensePub.includes("0000000000000000")) {
+    pubs.add(adsensePub);
+  }
+  if (admobPubMatch) pubs.add(`pub-${admobPubMatch[1]}`);
+  if (!pubs.size) pubs.add("pub-5165582915599822");
 
   const lines: string[] = [
     "# GamePlay Live — Google AdMob app-ads.txt",
     "# Host this on the developer website listed in Play Console",
   ];
-
-  if (pub.startsWith("pub-") && !pub.includes("0000000000000000")) {
+  for (const pub of pubs) {
     lines.push(`google.com, ${pub}, DIRECT, f08c47fec0942fa0`);
-  } else {
-    lines.push("google.com, pub-5165582915599822, DIRECT, f08c47fec0942fa0");
   }
 
   lines.push("");
