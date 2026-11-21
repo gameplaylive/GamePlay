@@ -108,8 +108,10 @@ async function syncYoutubeLive(
     .eq("platform", "youtube")
     .eq("content_type", "live");
 
-  const cacheEmpty = !existingYt;
-  const refill = Boolean(opts.forceRefill) || cacheEmpty;
+  // One stale row still means Live looks Twitch-only — refill all batches when starved.
+  const YT_LIVE_STARVE_THRESHOLD = 20;
+  const cacheStarved = !existingYt || existingYt < YT_LIVE_STARVE_THRESHOLD;
+  const refill = Boolean(opts.forceRefill) || cacheStarved;
 
   const batches: YoutubeLiveSearchBatch[] = refill
     ? [...YOUTUBE_LIVE_SEARCH_BATCHES]
